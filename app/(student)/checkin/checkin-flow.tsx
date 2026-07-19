@@ -6,6 +6,7 @@ import { QrScanner } from "@/components/checkin/qr-scanner";
 import { CameraCapture } from "@/components/checkin/camera-capture";
 import { getOrCreateDeviceId } from "@/lib/checkin/device-id";
 import { extractActivityIdFromToken } from "@/lib/checkin/qr-token";
+import { FLAG_REASON_LABELS } from "@/lib/labels";
 
 type OpenActivity = {
   id: string;
@@ -26,13 +27,6 @@ type ActivityInfo = {
 };
 
 type CheckinResult = { status: "auto_approved" | "flagged"; flagReasons: string[] };
-
-const FLAG_LABELS: Record<string, string> = {
-  GPS_OUT_OF_BOUNDS: "อยู่นอกระยะที่กำหนดของกิจกรรม",
-  DEVICE_SHARING_SUSPECTED: "อุปกรณ์นี้เคยถูกใช้เช็คชื่อกิจกรรมนี้จากบัญชีอื่นมาก่อน",
-  PRINTED_QR_USED: "ใช้ QR สำรอง ไม่ใช่ QR สดหน้างาน",
-  SELF_REPORTED: "รอเจ้าหน้าที่ตรวจสอบหลักฐาน",
-};
 
 export function CheckinFlow() {
   const searchParams = useSearchParams();
@@ -62,13 +56,20 @@ export function CheckinFlow() {
 
   useEffect(() => {
     if (!activityId || activity) return;
+    let cancelled = false;
     fetch(`/api/activities/${activityId}/info`)
       .then((r) => r.json())
       .then((d) => {
+        if (cancelled) return;
         if (d.activity) setActivity(d.activity);
         else setError(d.error ?? "ไม่พบกิจกรรม");
       })
-      .catch(() => setError("โหลดข้อมูลกิจกรรมไม่สำเร็จ"));
+      .catch(() => {
+        if (!cancelled) setError("โหลดข้อมูลกิจกรรมไม่สำเร็จ");
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [activityId, activity]);
 
   function reset() {
@@ -144,7 +145,7 @@ export function CheckinFlow() {
         {!isApproved && (
           <ul className="space-y-1 text-left text-sm text-foreground/70">
             {result.flagReasons.map((r) => (
-              <li key={r}>• {FLAG_LABELS[r] ?? r}</li>
+              <li key={r}>• {FLAG_REASON_LABELS[r] ?? r}</li>
             ))}
           </ul>
         )}

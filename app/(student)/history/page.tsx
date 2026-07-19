@@ -1,8 +1,15 @@
-export default function HistoryPage() {
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth/auth";
+import { HistoryClient } from "./history-client";
+
+export default async function HistoryPage() {
+  const session = await auth();
+  if (!session?.user) redirect("/login");
+
   return (
     <div>
-      <h1 className="text-xl font-semibold">ประวัติกิจกรรม</h1>
-      <p className="mt-2 text-foreground/70">ประวัติเช็คชื่อ/คำร้องทั้งหมด — มาในเฟส 3</p>
+      <h1 className="mb-4 text-xl font-semibold">ประวัติกิจกรรม</h1>
+      <HistoryClient />
     </div>
   );
 }

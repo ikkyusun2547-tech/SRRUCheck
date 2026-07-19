@@ -70,6 +70,7 @@ enum RequestStatus {
   pending
   approved
   rejected
+  cancelled
 }
 
 // ---------- Models ----------
@@ -226,6 +227,9 @@ model ExternalActivityRequest {
   evidenceFile     String?          @map("evidence_file")
   status           RequestStatus    @default(pending)
   adminComment     String?          @map("admin_comment")
+  /// Buddhist-era academic year the request counts against, for the
+  /// per-year hour cap (Setting: external_activity_hour_cap_per_year).
+  academicYear     Int              @map("academic_year")
   createdAt        DateTime         @default(now()) @map("created_at")
   updatedAt        DateTime         @updatedAt @map("updated_at")
 
@@ -245,6 +249,9 @@ model CreditTransferRequest {
   evidenceFile   String?       @map("evidence_file")
   status         RequestStatus @default(pending)
   adminComment   String?       @map("admin_comment")
+  /// Buddhist-era academic year the request counts against, for the
+  /// per-year hour cap (Setting: credit_transfer_hour_cap_per_year).
+  academicYear   Int           @map("academic_year")
   createdAt      DateTime      @default(now()) @map("created_at")
   updatedAt      DateTime      @updatedAt @map("updated_at")
 
