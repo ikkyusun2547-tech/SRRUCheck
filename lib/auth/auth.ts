@@ -48,7 +48,7 @@ if (process.env.NODE_ENV === "development") {
   );
 }
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth({
   ...authConfig,
   providers,
   session: { strategy: "jwt" },
@@ -83,11 +83,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       user.id = dbUser.id;
       return true;
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user?.id) {
         const dbUser = await prisma.user.findUnique({ where: { id: user.id } });
         if (dbUser) {
           token.userId = dbUser.id;
+          token.role = dbUser.role;
+          token.profileCompleted = dbUser.profileCompleted;
+        }
+      } else if (trigger === "update" && token.userId) {
+        // Triggered by unstable_update() — re-read from the DB rather than
+        // trusting whatever the caller passed in, so this can't be spoofed.
+        const dbUser = await prisma.user.findUnique({ where: { id: token.userId as string } });
+        if (dbUser) {
           token.role = dbUser.role;
           token.profileCompleted = dbUser.profileCompleted;
         }
