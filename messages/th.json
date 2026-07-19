@@ -1,0 +1,66 @@
+{
+  "app": {
+    "name": "SRRU Check",
+    "tagline": "ระบบบริหารจัดการและเช็คชื่อกิจกรรมนักศึกษา มหาวิทยาลัยราชภัฏสุรินทร์",
+    "login": "เข้าสู่ระบบ",
+    "logout": "ออกจากระบบ"
+  },
+  "studentNav": {
+    "dashboard": "แดชบอร์ด",
+    "activities": "กิจกรรม",
+    "checkin": "เช็คชื่อ",
+    "requests": "คำร้อง",
+    "history": "ประวัติ",
+    "notifications": "แจ้งเตือน",
+    "profile": "โปรไฟล์"
+  },
+  "adminNav": {
+    "overview": "ภาพรวม",
+    "activities": "กิจกรรม",
+    "live": "Live Event Control",
+    "requests": "คำร้อง",
+    "students": "ข้อมูลนักศึกษา",
+    "users": "ผู้ใช้/สิทธิ์",
+    "faculties": "คณะ/สาขา",
+    "settings": "ตั้งค่าเกณฑ์",
+    "auditLog": "Audit log",
+    "announcements": "ประกาศ",
+    "reports": "รายงาน"
+  },
+  "categories": {
+    "culture": "ทำนุบำรุงศิลปวัฒนธรรม",
+    "academic": "วิชาการ",
+    "sports": "กีฬาและส่งเสริมสุขภาพ",
+    "volunteer": "จิตอาสา",
+    "ethics": "คุณธรรมจริยธรรม"
+  },
+  "requestStatus": {
+    "pending": "รอตรวจสอบ",
+    "approved": "อนุมัติแล้ว",
+    "rejected": "ปฏิเสธ",
+    "cancelled": "ยกเลิกแล้ว"
+  },
+  "attendanceStatus": {
+    "auto_approved": "อนุมัติอัตโนมัติ",
+    "flagged": "รอตรวจสอบ",
+    "rejected": "ปฏิเสธ"
+  },
+  "dashboard": {
+    "title": "Activity Passport",
+    "passed": "ผ่านเกณฑ์แล้ว",
+    "notPassed": "ยังไม่ผ่านเกณฑ์",
+    "totalHours": "ชั่วโมงสะสม",
+    "totalActivities": "จำนวนกิจกรรม",
+    "yearlyTarget": "เป้าหมายสะสมภายในสิ้นปีนี้",
+    "categoryBreakdown": "ชั่วโมงแยกตามหมวดหมู่"
+  },
+  "common": {
+    "save": "บันทึก",
+    "cancel": "ยกเลิก",
+    "delete": "ลบ",
+    "edit": "แก้ไข",
+    "loading": "กำลังโหลด...",
+    "next": "ถัดไป",
+    "previous": "ก่อนหน้า"
+  }
+}

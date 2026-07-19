@@ -1,13 +1,15 @@
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { auth } from "@/lib/auth/auth";
 import { getPassportSummary } from "@/lib/passport/service";
-import { CATEGORY_LABELS } from "@/lib/labels";
 
 export default async function DashboardPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
 
   const summary = await getPassportSummary(session.user.id);
+  const t = await getTranslations();
+
   if (!summary) {
     return <p className="text-sm text-foreground/60">ไม่พบข้อมูลผู้ใช้</p>;
   }
@@ -21,7 +23,7 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Activity Passport</h1>
+        <h1 className="text-xl font-semibold">{t("dashboard.title")}</h1>
         <span
           className={`rounded-full px-3 py-1 text-sm font-medium ${
             summary.passed
@@ -29,13 +31,13 @@ export default async function DashboardPage() {
               : "bg-amber-500/15 text-amber-600"
           }`}
         >
-          {summary.passed ? "ผ่านเกณฑ์แล้ว" : "ยังไม่ผ่านเกณฑ์"}
+          {summary.passed ? t("dashboard.passed") : t("dashboard.notPassed")}
         </span>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="rounded-lg border border-foreground/10 p-4">
-          <p className="text-sm text-foreground/60">ชั่วโมงสะสม</p>
+          <p className="text-sm text-foreground/60">{t("dashboard.totalHours")}</p>
           <p className="text-2xl font-bold">
             {summary.totalHours} <span className="text-base font-normal">/ {summary.requiredHours} ชม.</span>
           </p>
@@ -46,12 +48,12 @@ export default async function DashboardPage() {
             />
           </div>
           <p className="mt-1 text-xs text-foreground/50">
-            เป้าหมายสะสมภายในสิ้นปีนี้: {summary.yearlyCumulativeTarget} ชม.
+            {t("dashboard.yearlyTarget")}: {summary.yearlyCumulativeTarget} ชม.
           </p>
         </div>
 
         <div className="rounded-lg border border-foreground/10 p-4">
-          <p className="text-sm text-foreground/60">จำนวนกิจกรรม</p>
+          <p className="text-sm text-foreground/60">{t("dashboard.totalActivities")}</p>
           <p className="text-2xl font-bold">
             {summary.totalActivitiesCount}{" "}
             <span className="text-base font-normal">/ {summary.requiredActivities} กิจกรรม</span>
@@ -66,13 +68,11 @@ export default async function DashboardPage() {
       </div>
 
       <div>
-        <h2 className="mb-3 text-sm font-medium text-foreground/70">ชั่วโมงแยกตามหมวดหมู่</h2>
+        <h2 className="mb-3 text-sm font-medium text-foreground/70">{t("dashboard.categoryBreakdown")}</h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
           {Object.entries(summary.categoryHours).map(([category, hours]) => (
             <div key={category} className="rounded-lg border border-foreground/10 p-3 text-center">
-              <p className="text-xs text-foreground/60">
-                {CATEGORY_LABELS[category as keyof typeof CATEGORY_LABELS]}
-              </p>
+              <p className="text-xs text-foreground/60">{t(`categories.${category}`)}</p>
               <p className="mt-1 text-lg font-semibold">{hours} ชม.</p>
             </div>
           ))}

@@ -1,20 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { auth, signOut } from "@/lib/auth/auth";
-
-const navItems = [
-  { href: "/admin", label: "ภาพรวม" },
-  { href: "/admin/activities", label: "กิจกรรม" },
-  { href: "/admin/live", label: "Live Event Control" },
-  { href: "/admin/requests", label: "คำร้อง" },
-  { href: "/admin/students", label: "ข้อมูลนักศึกษา" },
-  { href: "/admin/users", label: "ผู้ใช้/สิทธิ์" },
-  { href: "/admin/faculties", label: "คณะ/สาขา" },
-  { href: "/admin/settings", label: "ตั้งค่าเกณฑ์" },
-  { href: "/admin/audit-log", label: "Audit log" },
-  { href: "/admin/announcements", label: "ประกาศ" },
-  { href: "/admin/reports", label: "รายงาน" },
-];
+import { ThemeToggle } from "@/components/theme-toggle";
+import { LanguageToggle } from "@/components/language-toggle";
 
 export default async function AdminLayout({
   children,
@@ -23,10 +12,31 @@ export default async function AdminLayout({
   if (!session?.user) redirect("/login");
   if (session.user.role !== "admin") redirect("/dashboard");
 
+  const t = await getTranslations();
+  const navItems = [
+    { href: "/admin", label: t("adminNav.overview") },
+    { href: "/admin/activities", label: t("adminNav.activities") },
+    { href: "/admin/live", label: t("adminNav.live") },
+    { href: "/admin/requests", label: t("adminNav.requests") },
+    { href: "/admin/students", label: t("adminNav.students") },
+    { href: "/admin/users", label: t("adminNav.users") },
+    { href: "/admin/faculties", label: t("adminNav.faculties") },
+    { href: "/admin/settings", label: t("adminNav.settings") },
+    { href: "/admin/audit-log", label: t("adminNav.auditLog") },
+    { href: "/admin/announcements", label: t("adminNav.announcements") },
+    { href: "/admin/reports", label: t("adminNav.reports") },
+  ];
+
   return (
     <div className="flex min-h-screen flex-1">
       <aside className="hidden w-56 shrink-0 flex-col border-r border-foreground/10 bg-brand-purple-950 p-4 text-white sm:flex">
-        <span className="mb-6 font-semibold">SRRU Check · Admin</span>
+        <div className="mb-6 flex items-center justify-between">
+          <span className="font-semibold">{t("app.name")} · Admin</span>
+          <div className="flex items-center gap-1">
+            <LanguageToggle />
+            <ThemeToggle />
+          </div>
+        </div>
         <nav className="flex flex-col gap-2 text-sm">
           {navItems.map((item) => (
             <Link key={item.href} href={item.href} className="rounded px-2 py-1 hover:bg-white/10">
@@ -42,7 +52,7 @@ export default async function AdminLayout({
           className="mt-auto"
         >
           <button type="submit" className="text-sm text-white/70 hover:text-white">
-            ออกจากระบบ
+            {t("app.logout")}
           </button>
         </form>
       </aside>

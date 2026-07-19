@@ -27,11 +27,24 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* Falls back to OS preference only until the user picks explicitly —
+   ThemeToggle then stamps data-theme on <html> and persists it, which
+   always wins over this media query regardless of OS setting. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --background: #0a0a0a;
     --foreground: #ededed;
   }
+}
+
+:root[data-theme="dark"] {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+}
+
+:root[data-theme="light"] {
+  --background: #ffffff;
+  --foreground: #171717;
 }
 
 body {

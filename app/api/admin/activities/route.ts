@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit/log";
 import { activitySchema } from "@/lib/admin/activities";
 import { parseThaiLocalDateTime } from "@/lib/admin/datetime";
+import { notifyMany } from "@/lib/notifications/dispatch";
+import { getEligibleStudentIds } from "@/lib/notifications/eligibility";
 
 // GET routes with no dynamic path segment default toward static
 // optimization in Next.js — force dynamic so session/auth-scoped data is
@@ -73,6 +75,19 @@ export async function POST(request: Request) {
       targetId: activity.id,
       changes: { title: activity.title, activityCode: activity.activityCode },
     });
+
+    if (activity.status === "open") {
+      const eligibleIds = await getEligibleStudentIds(activity.id);
+      await notifyMany(
+        eligibleIds.map((userId) => ({
+          userId,
+          type: "activity_new",
+          title: `กิจกรรมใหม่: ${activity.title}`,
+          body: "มีกิจกรรมใหม่ที่ตรงกับสิทธิ์ของคุณ ดูรายละเอียดและเช็คชื่อได้แล้ว",
+          data: { activityId: activity.id },
+        }))
+      );
+    }
 
     return NextResponse.json({ activity }, { status: 201 });
   } catch (err) {

@@ -1,6 +1,9 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit/log";
+import { notifyMany } from "@/lib/notifications/dispatch";
+
+const DECISION_LABEL_TH: Record<Decision, string> = { approved: "อนุมัติ", rejected: "ปฏิเสธ" };
 
 export class RequestDecisionError extends Error {
   code: string;
@@ -42,6 +45,16 @@ export async function decideExternalActivityRequest(
     changes: { hoursApproved: updated.hoursApproved, adminComment: updated.adminComment },
   });
 
+  await notifyMany([
+    {
+      userId: updated.userId,
+      type: `external_request_${decision}`,
+      title: `คำร้องกิจกรรมภายนอก "${updated.title}" ถูก${DECISION_LABEL_TH[decision]}`,
+      body: updated.adminComment ?? undefined,
+      data: { requestId },
+    },
+  ]);
+
   return updated;
 }
 
@@ -74,6 +87,16 @@ export async function decideCreditTransferRequest(
     targetId: requestId,
     changes: { hoursApproved: updated.hoursApproved, adminComment: updated.adminComment },
   });
+
+  await notifyMany([
+    {
+      userId: updated.userId,
+      type: `credit_transfer_request_${decision}`,
+      title: `คำร้องเทียบชั่วโมงผู้นำ "${updated.title}" ถูก${DECISION_LABEL_TH[decision]}`,
+      body: updated.adminComment ?? undefined,
+      data: { requestId },
+    },
+  ]);
 
   return updated;
 }
@@ -131,6 +154,16 @@ export async function decideLateCheckInRequest(
       targetId: requestId,
       changes: { hoursApproved: updated.hoursApproved, adminComment: updated.adminComment },
     });
+
+    await notifyMany([
+      {
+        userId: updated.userId,
+        type: `late_checkin_request_${decision}`,
+        title: `คำร้องเช็คชื่อย้อนหลัง "${existing.activity.title}" ถูก${DECISION_LABEL_TH[decision]}`,
+        body: updated.adminComment ?? undefined,
+        data: { requestId },
+      },
+    ]);
 
     return updated;
   } catch (err) {

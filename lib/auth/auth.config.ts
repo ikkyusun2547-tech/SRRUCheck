@@ -34,7 +34,14 @@ export const authConfig = {
         pathname === "/login" ||
         pathname.startsWith("/api/auth") ||
         pathname.startsWith("/api/dev/login") ||
-        pathname.startsWith("/api/cron");
+        pathname.startsWith("/api/cron") ||
+        // PWA assets: browsers fetch these unauthenticated (manifest/SW
+        // registration happen regardless of login state; the offline page
+        // must work precisely when nothing else does).
+        pathname === "/manifest.json" ||
+        pathname === "/sw.js" ||
+        pathname === "/offline.html" ||
+        pathname.startsWith("/icons/");
 
       if (isPublic) return true;
       if (!isLoggedIn) return false;

@@ -1,5 +1,7 @@
+import { getTranslations } from "next-intl/server";
 import { signIn } from "@/lib/auth/auth";
 import { prisma } from "@/lib/prisma";
+import { LanguageToggle } from "@/components/language-toggle";
 
 async function getDevUsers() {
   if (process.env.NODE_ENV !== "development") return [];
@@ -17,11 +19,15 @@ async function getDevUsers() {
 
 export default async function LoginPage() {
   const devUsers = await getDevUsers();
+  const t = await getTranslations();
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-8 px-6 py-24">
+    <div className="relative flex flex-1 flex-col items-center justify-center gap-8 px-6 py-24">
+      <div className="absolute right-4 top-4">
+        <LanguageToggle />
+      </div>
       <div className="w-full max-w-sm space-y-4 text-center">
-        <h1 className="text-2xl font-bold">เข้าสู่ระบบ</h1>
+        <h1 className="text-2xl font-bold">{t("app.login")}</h1>
         <p className="text-sm text-foreground/70">
           จำกัดเฉพาะอีเมล @{process.env.ALLOWED_EMAIL_DOMAIN ?? "srru.ac.th"} เท่านั้น
         </p>

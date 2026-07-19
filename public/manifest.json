@@ -1,0 +1,21 @@
+{
+  "name": "SRRU Check — ระบบเช็คชื่อกิจกรรมนักศึกษา",
+  "short_name": "SRRU Check",
+  "description": "ระบบบริหารจัดการและเช็คชื่อกิจกรรมนักศึกษา มหาวิทยาลัยราชภัฏสุรินทร์",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#2e1065",
+  "theme_color": "#2e1065",
+  "lang": "th",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

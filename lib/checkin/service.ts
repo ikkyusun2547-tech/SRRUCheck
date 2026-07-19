@@ -5,6 +5,7 @@ import { removeFromBucket, uploadToBucket } from "@/lib/supabase/storage";
 import { verifyQrToken } from "./qr-token";
 import { evaluateCheckin, type FlagReason } from "./evaluate";
 import { parseSelfieDataUrl } from "./selfie";
+import { notifyMany } from "@/lib/notifications/dispatch";
 
 export class CheckinError extends Error {
   code: string;
@@ -157,6 +158,22 @@ export async function performCheckin(req: CheckinRequest): Promise<CheckinOutcom
     }
     throw err;
   }
+
+  await notifyMany([
+    {
+      userId: req.userId,
+      type: evaluation.status === "auto_approved" ? "attendance_approved" : "attendance_flagged",
+      title:
+        evaluation.status === "auto_approved"
+          ? `เช็คชื่อกิจกรรม "${activity.title}" สำเร็จ`
+          : `เช็คชื่อกิจกรรม "${activity.title}" รอตรวจสอบ`,
+      body:
+        evaluation.status === "flagged"
+          ? `เหตุผล: ${evaluation.flagReasons.join(", ")}`
+          : undefined,
+      data: { activityId },
+    },
+  ]);
 
   return { status: evaluation.status, flagReasons: evaluation.flagReasons };
 }

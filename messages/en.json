@@ -1,0 +1,66 @@
+{
+  "app": {
+    "name": "SRRU Check",
+    "tagline": "Student Activity Management & Check-in System, Surindra Rajabhat University",
+    "login": "Log in",
+    "logout": "Log out"
+  },
+  "studentNav": {
+    "dashboard": "Dashboard",
+    "activities": "Activities",
+    "checkin": "Check In",
+    "requests": "Requests",
+    "history": "History",
+    "notifications": "Notifications",
+    "profile": "Profile"
+  },
+  "adminNav": {
+    "overview": "Overview",
+    "activities": "Activities",
+    "live": "Live Event Control",
+    "requests": "Requests",
+    "students": "Students",
+    "users": "Users & Roles",
+    "faculties": "Faculties & Majors",
+    "settings": "Criteria Settings",
+    "auditLog": "Audit Log",
+    "announcements": "Announcements",
+    "reports": "Reports"
+  },
+  "categories": {
+    "culture": "Arts & Culture",
+    "academic": "Academic",
+    "sports": "Sports & Health",
+    "volunteer": "Volunteer",
+    "ethics": "Ethics & Morality"
+  },
+  "requestStatus": {
+    "pending": "Pending",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "cancelled": "Cancelled"
+  },
+  "attendanceStatus": {
+    "auto_approved": "Auto-approved",
+    "flagged": "Under review",
+    "rejected": "Rejected"
+  },
+  "dashboard": {
+    "title": "Activity Passport",
+    "passed": "Criteria met",
+    "notPassed": "Not yet met",
+    "totalHours": "Total hours",
+    "totalActivities": "Total activities",
+    "yearlyTarget": "Cumulative target by end of this year",
+    "categoryBreakdown": "Hours by category"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "loading": "Loading...",
+    "next": "Next",
+    "previous": "Previous"
+  }
+}

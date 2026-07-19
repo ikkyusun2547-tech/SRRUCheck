@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit/log";
 import { activitySchema } from "@/lib/admin/activities";
 import { parseThaiLocalDateTime } from "@/lib/admin/datetime";
+import { notifyMany } from "@/lib/notifications/dispatch";
+import { getEligibleStudentIds } from "@/lib/notifications/eligibility";
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await requireAdminSession();
@@ -70,6 +72,25 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       targetId: id,
       changes: { title: activity.title, status: activity.status },
     });
+
+    // Notify anyone currently eligible plus anyone who already checked in
+    // (their eligibility may have changed along with the restrictions edit,
+    // but they still need to know the activity they attended/plan to was
+    // just edited).
+    const [eligibleIds, attendees] = await Promise.all([
+      getEligibleStudentIds(id),
+      prisma.attendance.findMany({ where: { activityId: id }, select: { userId: true } }),
+    ]);
+    const recipientIds = [...new Set([...eligibleIds, ...attendees.map((a) => a.userId)])];
+    await notifyMany(
+      recipientIds.map((userId) => ({
+        userId,
+        type: "activity_updated",
+        title: `กิจกรรม "${activity.title}" มีการแก้ไข`,
+        body: "รายละเอียดกิจกรรมมีการเปลี่ยนแปลง กรุณาตรวจสอบอีกครั้ง",
+        data: { activityId: id },
+      }))
+    );
 
     return NextResponse.json({ activity });
   } catch (err) {
