@@ -5,6 +5,7 @@
 // Buckets are private — the app always serves files through signed URLs
 // generated server-side, since selfies/evidence are personal data.
 
+import "dotenv/config";
 import { createSupabaseServiceClient, STORAGE_BUCKETS } from "../lib/supabase/server";
 
 async function ensureBucket(name: string) {

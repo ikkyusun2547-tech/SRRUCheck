@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { PrismaClient, ProgramType } from "@prisma/client";
 
 const prisma = new PrismaClient();
@@ -102,9 +103,90 @@ async function seedDevUsers() {
   });
 }
 
+// Approximate Surin, Thailand coordinates — placeholder until an admin
+// pins the real location via the activity management UI (phase 4).
+const SRRU_LAT = 14.881;
+const SRRU_LNG = 103.493;
+
+async function seedActivities() {
+  const now = Date.now();
+  const HOUR = 60 * 60 * 1000;
+
+  await prisma.activity.upsert({
+    where: { activityCode: "ACT-DEMO-001" },
+    update: {},
+    create: {
+      title: "ปฐมนิเทศนักศึกษาใหม่ (ตัวอย่าง)",
+      description: "กิจกรรมตัวอย่างสำหรับทดสอบเช็คชื่อแบบสามประสาน (QR + GPS + เซลฟี)",
+      level: "university",
+      activityCategory: "academic",
+      activityType: "mandatory_core",
+      academicYear: 2569,
+      semester: 1,
+      startTime: new Date(now - HOUR),
+      endTime: new Date(now + 2 * HOUR),
+      locationLat: SRRU_LAT,
+      locationLng: SRRU_LNG,
+      allowedRadius: 150,
+      locationName: "หอประชุมมหาวิทยาลัยราชภัฏสุรินทร์ (ตำแหน่งตัวอย่าง)",
+      creditHours: 3,
+      checkinMethod: "realtime",
+      requiresGps: true,
+      activityCode: "ACT-DEMO-001",
+      status: "open",
+    },
+  });
+
+  await prisma.activity.upsert({
+    where: { activityCode: "ACT-DEMO-002" },
+    update: {},
+    create: {
+      title: "จิตอาสาพัฒนาชุมชน (ตัวอย่าง — แนบหลักฐานเอง)",
+      description: "กิจกรรมตัวอย่างสำหรับทดสอบ self-report check-in",
+      level: "faculty",
+      activityCategory: "volunteer",
+      activityType: "mandatory_elective",
+      academicYear: 2569,
+      semester: 1,
+      startTime: new Date(now - HOUR),
+      endTime: new Date(now + 3 * HOUR),
+      creditHours: 2,
+      checkinMethod: "self_report",
+      requiresGps: false,
+      activityCode: "ACT-DEMO-002",
+      status: "open",
+    },
+  });
+
+  await prisma.activity.upsert({
+    where: { activityCode: "ACT-DEMO-003" },
+    update: {},
+    create: {
+      title: "กิจกรรมที่ปิดรับเช็คชื่อแล้ว (ตัวอย่าง)",
+      description: "ใช้ทดสอบว่าเช็คชื่อกิจกรรมที่ปิดแล้วถูกปฏิเสธอย่างถูกต้อง",
+      level: "university",
+      activityCategory: "sports",
+      activityType: "mandatory_elective",
+      academicYear: 2569,
+      semester: 1,
+      startTime: new Date(now - 7 * 24 * HOUR),
+      endTime: new Date(now - 7 * 24 * HOUR + 2 * HOUR),
+      locationLat: SRRU_LAT,
+      locationLng: SRRU_LNG,
+      allowedRadius: 100,
+      creditHours: 2,
+      checkinMethod: "realtime",
+      requiresGps: true,
+      activityCode: "ACT-DEMO-003",
+      status: "closed",
+    },
+  });
+}
+
 async function main() {
   await seedFacultiesAndMajors();
   await seedDevUsers();
+  await seedActivities();
   console.log("Seed complete.");
 }
 

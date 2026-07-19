@@ -1,10 +1,13 @@
+import { Suspense } from "react";
+import { CheckinFlow } from "./checkin-flow";
+
 export default function CheckinPage() {
   return (
-    <div>
-      <h1 className="text-xl font-semibold">เช็คชื่อกิจกรรม</h1>
-      <p className="mt-2 text-foreground/70">
-        สแกน QR + GPS + เซลฟียืนยันตัวตน (สามประสาน) — มาในเฟส 2
-      </p>
+    <div className="flex flex-col items-center gap-4">
+      <h1 className="self-start text-xl font-semibold">เช็คชื่อกิจกรรม</h1>
+      <Suspense fallback={<p className="text-sm text-foreground/50">กำลังโหลด...</p>}>
+        <CheckinFlow />
+      </Suspense>
     </div>
   );
 }
