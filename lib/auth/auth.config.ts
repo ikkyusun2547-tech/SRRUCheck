@@ -1,0 +1,51 @@
+import type { NextAuthConfig } from "next-auth";
+
+// Edge-safe base config: no providers with DB-dependent `authorize`/`signIn`
+// logic here (Prisma isn't Edge-runtime compatible). This is what
+// middleware.ts uses to read/route on the session; the full config with
+// providers and DB callbacks lives in auth.ts and runs in the Node runtime
+// (Route Handlers, Server Components, Server Actions).
+export const authConfig = {
+  pages: {
+    signIn: "/login",
+  },
+  providers: [],
+  callbacks: {
+    session({ session, token }) {
+      if (session.user) {
+        session.user.id = token.userId as string;
+        session.user.role = (token.role as "student" | "admin") ?? "student";
+        session.user.profileCompleted = Boolean(token.profileCompleted);
+      }
+      return session;
+    },
+    authorized({ auth, request }) {
+      const isLoggedIn = !!auth?.user;
+      const { pathname } = request.nextUrl;
+
+      const isPublic =
+        pathname === "/" ||
+        pathname === "/login" ||
+        pathname.startsWith("/api/auth") ||
+        pathname.startsWith("/api/dev/login") ||
+        pathname.startsWith("/api/cron");
+
+      if (isPublic) return true;
+      if (!isLoggedIn) return false;
+
+      if (pathname.startsWith("/admin") && auth.user.role !== "admin") {
+        return Response.redirect(new URL("/dashboard", request.nextUrl));
+      }
+
+      if (
+        auth.user.role === "student" &&
+        !auth.user.profileCompleted &&
+        !pathname.startsWith("/setup-profile")
+      ) {
+        return Response.redirect(new URL("/setup-profile", request.nextUrl));
+      }
+
+      return true;
+    },
+  },
+} satisfies NextAuthConfig;

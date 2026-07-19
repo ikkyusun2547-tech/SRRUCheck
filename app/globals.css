@@ -3,11 +3,25 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* Brand palette — dark purple / emerald. Dark/light toggle logic lands
+     in the cross-cutting phase; this just fixes the tokens both modes
+     will share so later work doesn't have to renegotiate the palette. */
+  --brand-purple-950: #2e1065;
+  --brand-purple-800: #5b21b6;
+  --brand-purple-600: #7c3aed;
+  --brand-emerald-600: #059669;
+  --brand-emerald-500: #10b981;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-brand-purple-950: var(--brand-purple-950);
+  --color-brand-purple-800: var(--brand-purple-800);
+  --color-brand-purple-600: var(--brand-purple-600);
+  --color-brand-emerald-600: var(--brand-emerald-600);
+  --color-brand-emerald-500: var(--brand-emerald-500);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }

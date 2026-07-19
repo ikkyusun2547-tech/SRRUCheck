@@ -1,0 +1,334 @@
+// SRRU Activity Check-in System — Prisma schema
+// Postgres hosted on Supabase. DATABASE_URL = pooled (pgbouncer) connection,
+// DIRECT_URL = direct connection used only for migrations.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ---------- Enums ----------
+
+enum ProgramType {
+  normal
+  special
+}
+
+enum UserRole {
+  student
+  admin
+}
+
+enum ActivityLevel {
+  university
+  faculty
+}
+
+enum ActivityCategory {
+  culture // ทำนุบำรุงศิลปวัฒนธรรม
+  academic // วิชาการ
+  sports // กีฬาและส่งเสริมสุขภาพ
+  volunteer // จิตอาสา
+  ethics // คุณธรรมจริยธรรม
+}
+
+enum ActivityType {
+  mandatory_core
+  mandatory_elective
+  practice
+}
+
+enum CheckinMethod {
+  realtime
+  self_report
+}
+
+enum ActivityStatus {
+  open
+  closed
+  cancelled
+}
+
+enum AttendanceCheckinMethod {
+  realtime
+  self_report
+  late_request
+}
+
+enum AttendanceStatus {
+  auto_approved
+  flagged
+  rejected
+}
+
+enum RequestStatus {
+  pending
+  approved
+  rejected
+}
+
+// ---------- Models ----------
+
+model User {
+  id               String       @id @default(cuid())
+  email            String       @unique
+  title            String?
+  firstName        String?      @map("first_name")
+  lastName         String?      @map("last_name")
+  studentId        String?      @unique @map("student_id")
+  enrollmentYear   Int?         @map("enrollment_year")
+  currentYear      Int?         @map("current_year")
+  programType      ProgramType? @map("program_type")
+  facultyId        String?      @map("faculty_id")
+  majorId          String?      @map("major_id")
+  role             UserRole     @default(student)
+  profileCompleted Boolean      @default(false) @map("profile_completed")
+  bannedAt         DateTime?    @map("banned_at")
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
+
+  faculty Faculty? @relation(fields: [facultyId], references: [id])
+  major   Major?   @relation(fields: [majorId], references: [id])
+
+  attendances              Attendance[]
+  externalActivityRequests ExternalActivityRequest[]
+  creditTransferRequests   CreditTransferRequest[]
+  lateCheckInRequests      LateCheckInRequest[]
+  deviceTokens             DeviceToken[]
+  notifications            Notification[]
+  auditLogs                AuditLog[]                 @relation("AuditActor")
+
+  @@index([facultyId])
+  @@index([majorId])
+  @@index([role])
+  @@map("users")
+}
+
+model Faculty {
+  id     String @id @default(cuid())
+  nameTh String @map("name_th")
+  nameEn String @map("name_en")
+
+  majors               Major[]
+  users                User[]
+  activityRestrictions ActivityRestriction[]
+
+  @@map("faculties")
+}
+
+model Major {
+  id        String @id @default(cuid())
+  facultyId String @map("faculty_id")
+  nameTh    String @map("name_th")
+  nameEn    String @map("name_en")
+
+  faculty              Faculty                @relation(fields: [facultyId], references: [id], onDelete: Cascade)
+  users                User[]
+  activityRestrictions ActivityRestriction[]
+
+  @@index([facultyId])
+  @@map("majors")
+}
+
+model Activity {
+  id                 String           @id @default(cuid())
+  title              String
+  description        String?
+  level              ActivityLevel
+  activityCategory   ActivityCategory @map("activity_category")
+  activityType       ActivityType     @map("activity_type")
+  academicYear       Int              @map("academic_year")
+  semester           Int
+  startTime          DateTime         @map("start_time")
+  endTime            DateTime         @map("end_time")
+  locationLat        Float?           @map("location_lat")
+  locationLng        Float?           @map("location_lng")
+  allowedRadius      Int?             @map("allowed_radius")
+  locationName       String?          @map("location_name")
+  creditHours        Float            @map("credit_hours")
+  checkinMethod      CheckinMethod    @default(realtime) @map("checkin_method")
+  requiresGps        Boolean          @default(true) @map("requires_gps")
+  activityCode       String           @unique @map("activity_code")
+  status             ActivityStatus   @default(open)
+  importantUpdatedAt DateTime?        @map("important_updated_at")
+  createdAt          DateTime         @default(now()) @map("created_at")
+  updatedAt          DateTime         @updatedAt @map("updated_at")
+
+  restrictions        ActivityRestriction[]
+  attendances         Attendance[]
+  lateCheckInRequests LateCheckInRequest[]
+
+  @@index([status])
+  @@index([academicYear, semester])
+  @@map("activities")
+}
+
+/// Restricts an activity to a faculty / major / year level. All three are
+/// optional and act as independent AND filters when present; a row with all
+/// three null means "no restriction" and should not normally be created.
+model ActivityRestriction {
+  id         String  @id @default(cuid())
+  activityId String  @map("activity_id")
+  facultyId  String? @map("faculty_id")
+  majorId    String? @map("major_id")
+  yearLevel  Int?    @map("year_level")
+
+  activity Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  faculty  Faculty? @relation(fields: [facultyId], references: [id], onDelete: Cascade)
+  major    Major?   @relation(fields: [majorId], references: [id], onDelete: Cascade)
+
+  @@index([activityId])
+  @@map("activity_restrictions")
+}
+
+model Attendance {
+  id             String                   @id @default(cuid())
+  userId         String                   @map("user_id")
+  activityId     String                   @map("activity_id")
+  checkinMethod  AttendanceCheckinMethod  @map("checkin_method")
+  checkinTime    DateTime                 @default(now()) @map("checkin_time")
+  studentLat     Float?                   @map("student_lat")
+  studentLng     Float?                   @map("student_lng")
+  distanceMeters Float?                   @map("distance_meters")
+  deviceUuid     String?                  @map("device_uuid")
+  photoPath      String?                  @map("photo_path")
+  status         AttendanceStatus         @map("status")
+  flagReason     String?                  @map("flag_reason")
+  rejectReason   String?                  @map("reject_reason")
+  creditedHours  Float?                   @map("credited_hours")
+  createdAt      DateTime                 @default(now()) @map("created_at")
+  updatedAt      DateTime                 @updatedAt @map("updated_at")
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activity Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  // DB-level idempotency: one check-in per user per activity, race-safe.
+  @@unique([userId, activityId])
+  @@index([activityId])
+  @@index([userId])
+  @@index([status])
+  @@index([activityId, deviceUuid])
+  @@map("attendances")
+}
+
+model ExternalActivityRequest {
+  id               String           @id @default(cuid())
+  userId           String           @map("user_id")
+  title            String
+  activityCategory ActivityCategory @map("activity_category")
+  hoursRequested   Float            @map("hours_requested")
+  hoursApproved    Float?           @map("hours_approved")
+  evidenceFile     String?          @map("evidence_file")
+  status           RequestStatus    @default(pending)
+  adminComment     String?          @map("admin_comment")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@map("external_activity_requests")
+}
+
+model CreditTransferRequest {
+  id             String        @id @default(cuid())
+  userId         String        @map("user_id")
+  title          String
+  hoursRequested Float         @map("hours_requested")
+  hoursApproved  Float?        @map("hours_approved")
+  evidenceFile   String?       @map("evidence_file")
+  status         RequestStatus @default(pending)
+  adminComment   String?       @map("admin_comment")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@map("credit_transfer_requests")
+}
+
+model LateCheckInRequest {
+  id            String        @id @default(cuid())
+  userId        String        @map("user_id")
+  activityId    String        @map("activity_id")
+  reason        String
+  status        RequestStatus @default(pending)
+  hoursApproved Float?        @map("hours_approved")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activity Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([activityId])
+  @@index([status])
+  @@map("late_checkin_requests")
+}
+
+/// One token per user. Re-assigning a token that was previously bound to a
+/// different user (same device, different login) moves it rather than erroring.
+model DeviceToken {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  token     String   @unique
+  platform  String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("device_tokens")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?  @map("actor_id")
+  action     String
+  targetType String   @map("target_type")
+  targetId   String?  @map("target_id")
+  changes    Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  actor User? @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([targetType, targetId])
+  @@index([createdAt])
+  @@index([actorId])
+  @@map("audit_logs")
+}
+
+/// Key/value config store, e.g. graduation-criteria overrides.
+model Setting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("settings")
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String    @map("user_id")
+  type      String
+  title     String
+  body      String?
+  data      Json?
+  readAt    DateTime? @map("read_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@index([createdAt])
+  @@map("notifications")
+}
