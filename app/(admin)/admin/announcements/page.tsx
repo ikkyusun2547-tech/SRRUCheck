@@ -1,8 +1,16 @@
-export default function AdminAnnouncementsPage() {
+import { prisma } from "@/lib/prisma";
+import { AnnouncementsClient } from "./announcements-client";
+
+export default async function AdminAnnouncementsPage() {
+  const faculties = await prisma.faculty.findMany({
+    orderBy: { nameTh: "asc" },
+    include: { majors: { orderBy: { nameTh: "asc" } } },
+  });
+
   return (
     <div>
-      <h1 className="text-xl font-semibold">ประกาศ</h1>
-      <p className="mt-2 text-foreground/70">ส่งข้อความถึงนักศึกษาทั้งหมด/กลุ่มที่เลือก — มาในเฟส 4</p>
+      <h1 className="mb-4 text-xl font-semibold">ประกาศ</h1>
+      <AnnouncementsClient faculties={faculties} />
     </div>
   );
 }

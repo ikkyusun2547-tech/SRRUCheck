@@ -1,8 +1,22 @@
-export default function AdminSettingsPage() {
+import { getGraduationCriteria } from "@/lib/passport/criteria";
+import { getExternalActivityHourCap, getCreditTransferHourCap } from "@/lib/requests/caps";
+import { SettingsClient } from "./settings-client";
+
+export default async function AdminSettingsPage() {
+  const [criteria, externalActivityHourCap, creditTransferHourCap] = await Promise.all([
+    getGraduationCriteria(),
+    getExternalActivityHourCap(),
+    getCreditTransferHourCap(),
+  ]);
+
   return (
     <div>
-      <h1 className="text-xl font-semibold">ตั้งค่าเกณฑ์การจบ</h1>
-      <p className="mt-2 text-foreground/70">Override ค่า default ผ่าน Setting table — มาในเฟส 4</p>
+      <h1 className="mb-4 text-xl font-semibold">ตั้งค่าเกณฑ์การจบ</h1>
+      <SettingsClient
+        initialCriteria={criteria}
+        initialExternalCap={externalActivityHourCap}
+        initialCreditTransferCap={creditTransferHourCap}
+      />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { LiveQrDisplay } from "@/components/checkin/live-qr-display";
+import { LiveAttendanceTable } from "@/components/admin/live-attendance-table";
 
 export default async function AdminLivePage({
   searchParams,
@@ -22,8 +23,7 @@ export default async function AdminLivePage({
       <div>
         <h1 className="text-xl font-semibold">Live Event Control</h1>
         <p className="mt-1 text-sm text-foreground/60">
-          QR หมุนรหัสสำหรับเช็คชื่อสดหน้างาน — ตารางผู้เช็คชื่อ, bulk/force approve และ export
-          มาในเฟส 4
+          QR หมุนรหัสสำหรับเช็คชื่อสดหน้างาน + ตารางผู้เช็คชื่อเรียลไทม์
         </p>
       </div>
 
@@ -48,9 +48,12 @@ export default async function AdminLivePage({
       </div>
 
       {selected && (
-        <div>
-          <h2 className="mb-3 text-center text-lg font-medium">{selected.title}</h2>
-          <LiveQrDisplay activityId={selected.id} />
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[320px_1fr]">
+          <div>
+            <h2 className="mb-3 text-center text-lg font-medium">{selected.title}</h2>
+            <LiveQrDisplay activityId={selected.id} />
+          </div>
+          <LiveAttendanceTable activityId={selected.id} />
         </div>
       )}
     </div>

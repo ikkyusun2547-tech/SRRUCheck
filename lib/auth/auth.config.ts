@@ -9,6 +9,12 @@ export const authConfig = {
   pages: {
     signIn: "/login",
   },
+  // Without this, Auth.js rejects every request in production with
+  // "UntrustedHost" unless AUTH_URL matches the incoming Host header exactly
+  // — breaks self-hosted/non-Vercel deployments and even local `next start`
+  // testing. Safe here because our own domain-allowlist check in auth.ts
+  // (ALLOWED_EMAIL_DOMAIN) is the real access control, not the host header.
+  trustHost: true,
   providers: [],
   callbacks: {
     session({ session, token }) {

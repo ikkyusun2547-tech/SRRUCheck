@@ -1,8 +1,16 @@
-export default function AdminStudentsPage() {
+import { prisma } from "@/lib/prisma";
+import { StudentsClient } from "./students-client";
+
+export default async function AdminStudentsPage() {
+  const faculties = await prisma.faculty.findMany({
+    orderBy: { nameTh: "asc" },
+    include: { majors: { orderBy: { nameTh: "asc" } } },
+  });
+
   return (
     <div>
-      <h1 className="text-xl font-semibold">ข้อมูลนักศึกษาในระบบ</h1>
-      <p className="mt-2 text-foreground/70">ค้นหา/กรองนักศึกษา + นำเข้า Excel/CSV — มาในเฟส 4</p>
+      <h1 className="mb-4 text-xl font-semibold">ข้อมูลนักศึกษาในระบบ</h1>
+      <StudentsClient faculties={faculties} />
     </div>
   );
 }

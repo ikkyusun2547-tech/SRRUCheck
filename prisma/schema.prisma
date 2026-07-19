@@ -269,6 +269,7 @@ model LateCheckInRequest {
   reason        String
   status        RequestStatus @default(pending)
   hoursApproved Float?        @map("hours_approved")
+  adminComment  String?       @map("admin_comment")
   createdAt     DateTime      @default(now()) @map("created_at")
   updatedAt     DateTime      @updatedAt @map("updated_at")
 

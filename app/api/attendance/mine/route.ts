@@ -5,6 +5,11 @@ import { prisma } from "@/lib/prisma";
 const DEFAULT_PAGE_SIZE = 20;
 const MAX_PAGE_SIZE = 50;
 
+// GET routes with no dynamic path segment default toward static
+// optimization in Next.js — force dynamic so session/auth-scoped data is
+// never cached or served stale across users.
+export const dynamic = "force-dynamic";
+
 export async function GET(request: Request) {
   const session = await auth();
   if (!session?.user?.id) {

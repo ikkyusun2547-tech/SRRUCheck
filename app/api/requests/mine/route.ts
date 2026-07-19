@@ -16,6 +16,11 @@ function parsePagination(url: URL) {
 
 // Every branch here does its own LIMIT/OFFSET query at the database — never
 // fetches everything and slices in application code.
+// GET routes with no dynamic path segment default toward static
+// optimization in Next.js — force dynamic so session/auth-scoped data is
+// never cached or served stale across users.
+export const dynamic = "force-dynamic";
+
 export async function GET(request: Request) {
   const session = await auth();
   if (!session?.user?.id) {

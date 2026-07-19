@@ -1,8 +1,10 @@
+import { NotificationsClient } from "./notifications-client";
+
 export default function NotificationsPage() {
   return (
     <div>
-      <h1 className="text-xl font-semibold">การแจ้งเตือน</h1>
-      <p className="mt-2 text-foreground/70">การแจ้งเตือนในระบบ — มาในเฟส 3/5</p>
+      <h1 className="mb-4 text-xl font-semibold">การแจ้งเตือน</h1>
+      <NotificationsClient />
     </div>
   );
 }
