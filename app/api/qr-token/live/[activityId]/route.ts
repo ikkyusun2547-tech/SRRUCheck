@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth/auth";
+import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { generateQrToken, buildCheckinUrl } from "@/lib/checkin/qr-token";
 import { generateQrPng } from "@/lib/checkin/qr-image";
@@ -9,10 +9,10 @@ import { generateQrPng } from "@/lib/checkin/qr-image";
 // window — the token itself is verified server-side on scan, not trusted
 // from the client that requested this image.
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ activityId: string }> }
 ) {
-  const session = await auth();
+  const session = await getSession(request);
   if (!session?.user || session.user.role !== "admin") {
     return new Response(null, { status: 404 });
   }

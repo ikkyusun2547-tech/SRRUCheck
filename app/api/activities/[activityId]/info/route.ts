@@ -1,16 +1,20 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth/auth";
+import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 
 // Public (any authenticated user) read of just enough activity info for
 // the check-in client to know which steps to show after a QR scan. All
 // security-relevant checks are re-done server-side in /api/checkin — this
 // endpoint is purely informational.
+export function OPTIONS() {
+  return new Response(null, { status: 204 });
+}
+
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ activityId: string }> }
 ) {
-  const session = await auth();
+  const session = await getSession(request);
   if (!session?.user) {
     return NextResponse.json({ error: "กรุณาเข้าสู่ระบบ" }, { status: 401 });
   }

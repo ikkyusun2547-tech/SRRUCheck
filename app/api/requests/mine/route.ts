@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth/auth";
+import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 
 const DEFAULT_PAGE_SIZE = 20;
@@ -21,8 +21,12 @@ function parsePagination(url: URL) {
 // never cached or served stale across users.
 export const dynamic = "force-dynamic";
 
+export function OPTIONS() {
+  return new Response(null, { status: 204 });
+}
+
 export async function GET(request: Request) {
-  const session = await auth();
+  const session = await getSession(request);
   if (!session?.user?.id) {
     return NextResponse.json({ error: "กรุณาเข้าสู่ระบบ" }, { status: 401 });
   }

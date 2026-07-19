@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth/auth";
+import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 
 // Minimal open-activities listing to drive the check-in flow. The full
@@ -10,8 +10,12 @@ import { prisma } from "@/lib/prisma";
 // never cached or served stale across users.
 export const dynamic = "force-dynamic";
 
-export async function GET() {
-  const session = await auth();
+export function OPTIONS() {
+  return new Response(null, { status: 204 });
+}
+
+export async function GET(request: Request) {
+  const session = await getSession(request);
   if (!session?.user) {
     return NextResponse.json({ error: "กรุณาเข้าสู่ระบบ" }, { status: 401 });
   }

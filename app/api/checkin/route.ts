@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { auth } from "@/lib/auth/auth";
+import { getSession } from "@/lib/auth/session";
 import { performCheckin, CheckinError } from "@/lib/checkin/service";
 
 const bodySchema = z
@@ -31,8 +31,12 @@ const ERROR_STATUS: Record<string, number> = {
   SERVER_MISCONFIGURED: 500,
 };
 
+export function OPTIONS() {
+  return new Response(null, { status: 204 });
+}
+
 export async function POST(request: Request) {
-  const session = await auth();
+  const session = await getSession(request);
   if (!session?.user?.id) {
     return NextResponse.json({ error: "กรุณาเข้าสู่ระบบ" }, { status: 401 });
   }

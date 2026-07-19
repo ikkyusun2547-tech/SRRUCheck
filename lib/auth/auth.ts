@@ -3,13 +3,7 @@ import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
 import { prisma } from "@/lib/prisma";
 import { authConfig } from "./auth.config";
-
-const allowedDomain = (process.env.ALLOWED_EMAIL_DOMAIN ?? "srru.ac.th").toLowerCase();
-
-function emailMatchesAllowedDomain(email: string | null | undefined) {
-  if (!email) return false;
-  return email.toLowerCase().endsWith(`@${allowedDomain}`);
-}
+import { emailMatchesAllowedDomain, findOrCreateUserByEmail } from "./user-upsert";
 
 const providers: NextAuthConfig["providers"] = [
   Google({
@@ -70,11 +64,7 @@ export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth({
       // Find-or-create our own User row. We intentionally do not use the
       // Prisma adapter — this app's User model has custom student fields
       // the adapter's shape doesn't need to know about.
-      const dbUser = await prisma.user.upsert({
-        where: { email: user.email! },
-        update: {},
-        create: { email: user.email! },
-      });
+      const dbUser = await findOrCreateUserByEmail(user.email!);
 
       if (dbUser.bannedAt) return false;
 

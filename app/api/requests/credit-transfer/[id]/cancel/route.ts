@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth/auth";
+import { getSession } from "@/lib/auth/session";
 import { cancelCreditTransferRequest, RequestError } from "@/lib/requests/service";
 
 const ERROR_STATUS: Record<string, number> = {
@@ -7,8 +7,12 @@ const ERROR_STATUS: Record<string, number> = {
   NOT_CANCELLABLE: 409,
 };
 
-export async function POST(_request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const session = await auth();
+export function OPTIONS() {
+  return new Response(null, { status: 204 });
+}
+
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const session = await getSession(request);
   if (!session?.user?.id) {
     return NextResponse.json({ error: "กรุณาเข้าสู่ระบบ" }, { status: 401 });
   }

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth/auth";
+import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { generateQrToken, buildCheckinUrl } from "@/lib/checkin/qr-token";
 import { generateQrPng } from "@/lib/checkin/qr-image";
@@ -8,11 +8,15 @@ import { generateQrPng } from "@/lib/checkin/qr-image";
 // screen at the venue. Never rotates, and checking in with it always gets
 // flagged PRINTED_QR_USED server-side — enforced in lib/checkin/service.ts,
 // not here.
+export function OPTIONS() {
+  return new Response(null, { status: 204 });
+}
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ activityId: string }> }
 ) {
-  const session = await auth();
+  const session = await getSession(request);
   if (!session?.user) {
     return new Response(null, { status: 401 });
   }

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth/auth";
+import { getSession } from "@/lib/auth/session";
 import { creditTransferRequestSchema } from "@/lib/requests/validation";
 import { createCreditTransferRequest, RequestError } from "@/lib/requests/service";
 
@@ -8,8 +8,12 @@ const ERROR_STATUS: Record<string, number> = {
   HOUR_CAP_EXCEEDED: 400,
 };
 
+export function OPTIONS() {
+  return new Response(null, { status: 204 });
+}
+
 export async function POST(request: Request) {
-  const session = await auth();
+  const session = await getSession(request);
   if (!session?.user?.id) {
     return NextResponse.json({ error: "กรุณาเข้าสู่ระบบ" }, { status: 401 });
   }
