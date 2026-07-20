@@ -155,6 +155,7 @@ model Activity {
   checkinMethod      CheckinMethod    @default(realtime) @map("checkin_method")
   requiresGps        Boolean          @default(true) @map("requires_gps")
   activityCode       String           @unique @map("activity_code")
+  coverImagePath     String?          @map("cover_image_path")
   status             ActivityStatus   @default(open)
   importantUpdatedAt DateTime?        @map("important_updated_at")
   createdAt          DateTime         @default(now()) @map("created_at")

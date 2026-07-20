@@ -21,16 +21,35 @@ export async function logAudit(params: {
 
 /** Paginated at the database query (LIMIT/OFFSET) — never fetch-all-then-slice,
  * since this table only grows. */
-export async function getAuditLogPage(page: number, pageSize: number) {
+export async function getAuditLogPage(
+  page: number,
+  pageSize: number,
+  filters?: { action?: string; actorSearch?: string }
+) {
   const skip = (page - 1) * pageSize;
+  const where: Prisma.AuditLogWhereInput = {
+    ...(filters?.action ? { action: filters.action } : {}),
+    ...(filters?.actorSearch
+      ? {
+          actor: {
+            OR: [
+              { firstName: { contains: filters.actorSearch, mode: "insensitive" } },
+              { lastName: { contains: filters.actorSearch, mode: "insensitive" } },
+              { email: { contains: filters.actorSearch, mode: "insensitive" } },
+            ],
+          },
+        }
+      : {}),
+  };
   const [items, total] = await Promise.all([
     prisma.auditLog.findMany({
+      where,
       orderBy: { createdAt: "desc" },
       skip,
       take: pageSize,
       include: { actor: { select: { email: true, firstName: true, lastName: true } } },
     }),
-    prisma.auditLog.count(),
+    prisma.auditLog.count({ where }),
   ]);
   return { items, total, page, pageSize, totalPages: Math.max(1, Math.ceil(total / pageSize)) };
 }

@@ -21,6 +21,7 @@ export async function GET(request: Request) {
   const majorId = url.searchParams.get("majorId") || undefined;
   const currentYear = url.searchParams.get("currentYear");
   const role = url.searchParams.get("role") || undefined;
+  const banned = url.searchParams.get("banned");
   const page = Math.max(1, Number(url.searchParams.get("page") ?? "1") || 1);
   const pageSize = Math.min(
     MAX_PAGE_SIZE,
@@ -32,6 +33,8 @@ export async function GET(request: Request) {
     ...(majorId ? { majorId } : {}),
     ...(currentYear ? { currentYear: Number(currentYear) } : {}),
     ...(role ? { role: role as "student" | "admin" } : {}),
+    ...(banned === "true" ? { bannedAt: { not: null } } : {}),
+    ...(banned === "false" ? { bannedAt: null } : {}),
     ...(search
       ? {
           OR: [

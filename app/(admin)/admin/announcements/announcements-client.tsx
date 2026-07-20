@@ -1,11 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
+import { FilterSelect } from "@/components/admin/filter-select";
+import { SectionHeading } from "@/components/admin/section-heading";
 
-type Major = { id: string; nameTh: string; facultyId: string };
-type Faculty = { id: string; nameTh: string; majors: Major[] };
+type Major = { id: string; nameTh: string; nameEn: string; facultyId: string };
+type Faculty = { id: string; nameTh: string; nameEn: string; majors: Major[] };
 
 export function AnnouncementsClient({ faculties }: { faculties: Faculty[] }) {
+  const t = useTranslations("adminAnnouncements");
+  const locale = useLocale();
+  const name = (o: { nameTh: string; nameEn: string }) => (locale === "en" ? o.nameEn : o.nameTh);
+
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [facultyId, setFacultyId] = useState("");
@@ -36,10 +43,10 @@ export function AnnouncementsClient({ faculties }: { faculties: Faculty[] }) {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error ?? "ส่งประกาศไม่สำเร็จ");
+        setError(data.error ?? t("sendFailed"));
         return;
       }
-      setResult(`ส่งถึง ${data.recipients} คน (สำเร็จ ${data.sent}, ล้มเหลว ${data.failed})`);
+      setResult(t("sendResult", { recipients: data.recipients, sent: data.sent, failed: data.failed }));
       setTitle("");
       setBody("");
     } finally {
@@ -48,91 +55,84 @@ export function AnnouncementsClient({ faculties }: { faculties: Faculty[] }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-lg space-y-3">
+    <form onSubmit={handleSubmit} className="mx-auto max-w-lg space-y-4 rounded-xl border border-foreground/10 bg-surface p-5 shadow-sm">
+      <SectionHeading icon={<MegaphoneIcon />}>{t("composeCardTitle")}</SectionHeading>
       {error && (
-        <p className="rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-600">
+        <p className="rounded-xl border border-red-500/30 bg-red-50 px-4 py-2.5 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-400">
           {error}
         </p>
       )}
       {result && (
-        <p className="rounded-md border border-brand-emerald-500/40 bg-brand-emerald-500/10 px-3 py-2 text-sm text-brand-emerald-600">
+        <p className="rounded-xl border border-brand-emerald-500/30 bg-brand-emerald-50 px-4 py-2.5 text-sm text-brand-emerald-700 dark:bg-brand-emerald-500/10 dark:text-brand-emerald-400">
           {result}
         </p>
       )}
 
       <div>
-        <label className="mb-1 block text-sm font-medium">หัวข้อ</label>
+        <label className="mb-1 block text-sm font-medium text-foreground/80">{t("titleFieldLabel")}</label>
         <input
           required
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="w-full rounded-md border border-foreground/20 bg-transparent px-3 py-2"
+          className="w-full rounded-lg border border-foreground/15 bg-transparent px-3 py-2 text-sm outline-none focus:border-brand-purple-600/40"
         />
       </div>
       <div>
-        <label className="mb-1 block text-sm font-medium">เนื้อหา</label>
+        <label className="mb-1 block text-sm font-medium text-foreground/80">{t("bodyFieldLabel")}</label>
         <textarea
           required
           rows={5}
           value={body}
           onChange={(e) => setBody(e.target.value)}
-          className="w-full rounded-md border border-foreground/20 bg-transparent px-3 py-2"
+          className="w-full rounded-lg border border-foreground/15 bg-transparent px-3 py-2 text-sm outline-none focus:border-brand-purple-600/40"
         />
       </div>
 
       <div>
-        <p className="mb-1 text-sm font-medium">กลุ่มเป้าหมาย (ไม่เลือก = นักศึกษาทั้งหมด)</p>
-        <div className="grid grid-cols-3 gap-2">
-          <select
+        <p className="mb-1.5 text-sm font-medium text-foreground/80">{t("targetGroupLabel")}</p>
+        <div className="flex flex-wrap items-center gap-1 rounded-xl border border-foreground/10 p-1.5">
+          <FilterSelect
             value={facultyId}
-            onChange={(e) => {
-              setFacultyId(e.target.value);
+            onChange={(v) => {
+              setFacultyId(v);
               setMajorId("");
             }}
-            className="rounded-md border border-foreground/20 bg-transparent px-2 py-1.5 text-sm"
-          >
-            <option value="">ทุกคณะ</option>
-            {faculties.map((f) => (
-              <option key={f.id} value={f.id}>
-                {f.nameTh}
-              </option>
-            ))}
-          </select>
-          <select
+            placeholder={t("allFaculties")}
+            options={faculties.map((f) => ({ value: f.id, label: name(f) }))}
+          />
+          <FilterSelect
             value={majorId}
+            onChange={setMajorId}
             disabled={!facultyId}
-            onChange={(e) => setMajorId(e.target.value)}
-            className="rounded-md border border-foreground/20 bg-transparent px-2 py-1.5 text-sm disabled:opacity-50"
-          >
-            <option value="">ทุกสาขา</option>
-            {majorsForFaculty.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.nameTh}
-              </option>
-            ))}
-          </select>
-          <select
+            placeholder={t("allMajors")}
+            options={majorsForFaculty.map((m) => ({ value: m.id, label: name(m) }))}
+          />
+          <FilterSelect
             value={currentYear}
-            onChange={(e) => setCurrentYear(e.target.value)}
-            className="rounded-md border border-foreground/20 bg-transparent px-2 py-1.5 text-sm"
-          >
-            <option value="">ทุกชั้นปี</option>
-            {[1, 2, 3, 4, 5, 6].map((y) => (
-              <option key={y} value={y}>
-                ปี {y}
-              </option>
-            ))}
-          </select>
+            onChange={setCurrentYear}
+            placeholder={t("allYears")}
+            options={[1, 2, 3, 4, 5, 6].map((y) => ({ value: String(y), label: t("year", { year: y }) }))}
+          />
         </div>
       </div>
 
       <button
         type="submit"
         disabled={pending}
-        className="rounded-full bg-brand-emerald-500 px-6 py-2 text-sm font-medium text-white disabled:opacity-60"
+        className="rounded-full bg-brand-emerald-500 px-6 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-brand-emerald-600 disabled:opacity-60"
       >
-        {pending ? "กำลังส่ง..." : "ส่งประกาศ"}
+        {pending ? t("sending") : t("sendButton")}
       </button>
     </form>
+  );
+}
+
+function MegaphoneIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden>
+      <path d="M2 6.5v3a1 1 0 0 0 1 1h1.2l6.3 3V2.5l-6.3 3H3a1 1 0 0 0-1 1Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+      <path d="M13 6a2.2 2.2 0 0 1 0 4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <path d="M4.5 10.5 5.3 13.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
   );
 }

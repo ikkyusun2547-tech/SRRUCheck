@@ -14,7 +14,16 @@ export async function GET(
     where: { activityId },
     orderBy: { checkinTime: "desc" },
     include: {
-      user: { select: { firstName: true, lastName: true, email: true, studentId: true } },
+      user: {
+        select: {
+          firstName: true,
+          lastName: true,
+          email: true,
+          studentId: true,
+          faculty: { select: { nameTh: true, nameEn: true } },
+          major: { select: { nameTh: true, nameEn: true } },
+        },
+      },
     },
   });
 

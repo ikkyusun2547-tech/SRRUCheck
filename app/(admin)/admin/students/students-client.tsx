@@ -2,10 +2,14 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 import { REQUIRED_HEADERS_LABEL } from "./import-headers";
+import { FilterSelect } from "@/components/admin/filter-select";
+import { EmptyState } from "@/components/admin/empty-state";
+import { Pagination } from "@/components/admin/pagination";
 
-type Major = { id: string; nameTh: string; facultyId: string };
-type Faculty = { id: string; nameTh: string; majors: Major[] };
+type Major = { id: string; nameTh: string; nameEn: string; facultyId: string };
+type Faculty = { id: string; nameTh: string; nameEn: string; majors: Major[] };
 
 type StudentRow = {
   id: string;
@@ -14,11 +18,17 @@ type StudentRow = {
   lastName: string | null;
   email: string;
   currentYear: number | null;
-  faculty: { nameTh: string } | null;
-  major: { nameTh: string } | null;
+  faculty: { nameTh: string; nameEn: string } | null;
+  major: { nameTh: string; nameEn: string } | null;
 };
 
 export function StudentsClient({ faculties }: { faculties: Faculty[] }) {
+  const t = useTranslations("adminStudents");
+  const tCommon = useTranslations("common");
+  const locale = useLocale();
+  const name = (o: { nameTh: string; nameEn: string } | null) =>
+    o ? (locale === "en" ? o.nameEn : o.nameTh) : t("noFacultyRestriction");
+
   const [search, setSearch] = useState("");
   const [facultyId, setFacultyId] = useState("");
   const [majorId, setMajorId] = useState("");
@@ -84,103 +94,88 @@ export function StudentsClient({ faculties }: { faculties: Faculty[] }) {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-end gap-2">
-        <div>
-          <label className="mb-1 block text-xs text-foreground/60">ค้นหา (ชื่อ/รหัส/อีเมล)</label>
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center gap-1 rounded-xl border border-foreground/10 bg-surface p-2 shadow-sm">
+        <div className="relative flex-1 basis-64">
+          <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-foreground/35">
+            <SearchIcon />
+          </span>
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="rounded-md border border-foreground/20 bg-transparent px-3 py-1.5 text-sm"
+            placeholder={t("searchPlaceholder")}
+            className="w-full rounded-lg bg-transparent py-2 pl-9 pr-3 text-sm outline-none placeholder:text-foreground/40"
           />
         </div>
-        <div>
-          <label className="mb-1 block text-xs text-foreground/60">คณะ</label>
-          <select
-            value={facultyId}
-            onChange={(e) => {
-              setFacultyId(e.target.value);
-              setMajorId("");
-            }}
-            className="rounded-md border border-foreground/20 bg-transparent px-3 py-1.5 text-sm"
-          >
-            <option value="">ทุกคณะ</option>
-            {faculties.map((f) => (
-              <option key={f.id} value={f.id}>
-                {f.nameTh}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="mb-1 block text-xs text-foreground/60">สาขา</label>
-          <select
-            value={majorId}
-            disabled={!facultyId}
-            onChange={(e) => setMajorId(e.target.value)}
-            className="rounded-md border border-foreground/20 bg-transparent px-3 py-1.5 text-sm disabled:opacity-50"
-          >
-            <option value="">ทุกสาขา</option>
-            {majorsForFaculty.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.nameTh}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="mb-1 block text-xs text-foreground/60">ชั้นปี</label>
-          <select
-            value={currentYear}
-            onChange={(e) => setCurrentYear(e.target.value)}
-            className="rounded-md border border-foreground/20 bg-transparent px-3 py-1.5 text-sm"
-          >
-            <option value="">ทุกชั้นปี</option>
-            {[1, 2, 3, 4, 5, 6].map((y) => (
-              <option key={y} value={y}>
-                ปี {y}
-              </option>
-            ))}
-          </select>
-        </div>
+        <div className="mx-1 h-6 w-px shrink-0 bg-foreground/10" aria-hidden />
+        <FilterSelect
+          value={facultyId}
+          onChange={(v) => {
+            setFacultyId(v);
+            setMajorId("");
+          }}
+          placeholder={t("allFaculties")}
+          options={faculties.map((f) => ({ value: f.id, label: name(f) }))}
+        />
+        <FilterSelect
+          value={majorId}
+          onChange={setMajorId}
+          disabled={!facultyId}
+          placeholder={facultyId ? t("allMajors") : t("selectFacultyFirst")}
+          options={majorsForFaculty.map((m) => ({ value: m.id, label: name(m) }))}
+        />
+        <FilterSelect
+          value={currentYear}
+          onChange={setCurrentYear}
+          placeholder={t("allYears")}
+          align="right"
+          options={[1, 2, 3, 4, 5, 6].map((y) => ({ value: String(y), label: t("year", { year: y }) }))}
+        />
+        <div className="mx-1 h-6 w-px shrink-0 bg-foreground/10" aria-hidden />
         <button
           type="button"
           onClick={() => setImportOpen((v) => !v)}
-          className="ml-auto rounded-full border border-foreground/20 px-4 py-1.5 text-sm"
+          className={`ml-auto inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-medium transition-colors ${
+            importOpen ? "bg-brand-purple-50 text-brand-purple-600 dark:bg-brand-purple-400/10" : "text-foreground/65 hover:bg-foreground/5"
+          }`}
         >
-          นำเข้าจาก Excel
+          <ImportIcon />
+          {t("importButton")}
         </button>
       </div>
 
       {importOpen && (
-        <form onSubmit={handleImport} className="space-y-2 rounded-lg border border-foreground/10 p-4">
-          <p className="text-xs text-foreground/60">
-            ไฟล์ .xlsx แถวแรกเป็นหัวตาราง (ไทย): {REQUIRED_HEADERS_LABEL}
-          </p>
-          <input
-            type="file"
-            accept=".xlsx"
-            onChange={(e) => setImportFile(e.target.files?.[0] ?? null)}
-            className="text-sm"
-          />
-          <button
-            type="submit"
-            disabled={!importFile || importing}
-            className="rounded-full bg-brand-emerald-500 px-4 py-1.5 text-sm font-medium text-white disabled:opacity-60"
-          >
-            {importing ? "กำลังนำเข้า..." : "นำเข้า"}
-          </button>
+        <form onSubmit={handleImport} className="space-y-3 rounded-xl border border-foreground/10 bg-surface p-4 shadow-sm">
+          <p className="text-xs text-foreground/55">{t("importHelperText", { headers: REQUIRED_HEADERS_LABEL })}</p>
+          <div className="flex flex-wrap items-center gap-3">
+            <input
+              type="file"
+              accept=".xlsx"
+              onChange={(e) => setImportFile(e.target.files?.[0] ?? null)}
+              className="text-sm text-foreground/70 file:mr-3 file:rounded-full file:border-0 file:bg-foreground/8 file:px-3.5 file:py-1.5 file:text-xs file:font-medium file:text-foreground/70 hover:file:bg-foreground/12"
+            />
+            <button
+              type="submit"
+              disabled={!importFile || importing}
+              className="rounded-full bg-brand-emerald-500 px-4 py-1.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-brand-emerald-600 disabled:opacity-60"
+            >
+              {importing ? t("importing") : t("importSubmit")}
+            </button>
+          </div>
           {importResult && (
-            <div className="text-sm">
-              <p>
-                สร้างใหม่ {importResult.summary.created} · อัปเดต {importResult.summary.updated} · ข้าม{" "}
-                {importResult.summary.skipped}
+            <div className="rounded-lg bg-foreground/5 p-3 text-sm">
+              <p className="font-medium text-foreground/80">
+                {t("importSummary", {
+                  created: importResult.summary.created,
+                  updated: importResult.summary.updated,
+                  skipped: importResult.summary.skipped,
+                })}
               </p>
               {importResult.results
                 .filter((r) => r.status === "skipped")
                 .map((r) => (
-                  <p key={r.row} className="text-xs text-red-600">
-                    แถว {r.row}: {r.reason}
+                  <p key={r.row} className="mt-1 text-xs text-red-600 dark:text-red-400">
+                    {t("importRowError", { row: r.row, reason: r.reason ?? "" })}
                   </p>
                 ))}
             </div>
@@ -188,63 +183,76 @@ export function StudentsClient({ faculties }: { faculties: Faculty[] }) {
         </form>
       )}
 
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[700px] text-left text-sm">
-          <thead className="border-b border-foreground/10 text-foreground/60">
-            <tr>
-              <th className="py-2 pr-4">รหัสนักศึกษา</th>
-              <th className="py-2 pr-4">ชื่อ-นามสกุล</th>
-              <th className="py-2 pr-4">คณะ/สาขา</th>
-              <th className="py-2 pr-4">ชั้นปี</th>
-              <th className="py-2 pr-4"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {data?.items.map((s) => (
-              <tr key={s.id} className="border-b border-foreground/5">
-                <td className="py-2 pr-4">{s.studentId ?? "-"}</td>
-                <td className="py-2 pr-4">
-                  {[s.firstName, s.lastName].filter(Boolean).join(" ") || s.email}
-                </td>
-                <td className="py-2 pr-4">
-                  {s.faculty?.nameTh ?? "-"} / {s.major?.nameTh ?? "-"}
-                </td>
-                <td className="py-2 pr-4">{s.currentYear ?? "-"}</td>
-                <td className="py-2 pr-4">
-                  <Link href={`/admin/students/${s.id}`} className="text-brand-purple-600">
-                    ดูข้อมูล
-                  </Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {data?.items.length === 0 && <p className="py-4 text-sm text-foreground/50">ไม่พบข้อมูล</p>}
-      </div>
-
-      {data && data.totalPages > 1 && (
-        <div className="flex items-center gap-2 text-sm">
-          <button
-            type="button"
-            disabled={page <= 1}
-            onClick={() => setPage((p) => p - 1)}
-            className="rounded-md border border-foreground/20 px-3 py-1 disabled:opacity-40"
-          >
-            ก่อนหน้า
-          </button>
-          <span>
-            หน้า {page} / {data.totalPages} (ทั้งหมด {data.total})
-          </span>
-          <button
-            type="button"
-            disabled={page >= data.totalPages}
-            onClick={() => setPage((p) => p + 1)}
-            className="rounded-md border border-foreground/20 px-3 py-1 disabled:opacity-40"
-          >
-            ถัดไป
-          </button>
+      {data?.items.length === 0 ? (
+        <EmptyState icon={<SearchIcon size={22} />} message={tCommon("noResults")} />
+      ) : (
+        <div className="overflow-hidden rounded-xl border border-foreground/10 bg-surface shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[700px] text-left text-sm">
+              <thead className="border-b border-foreground/10 text-xs uppercase tracking-wide text-foreground/45">
+                <tr>
+                  <th className="py-3 pl-4 pr-4 font-medium">{t("tableStudentId")}</th>
+                  <th className="py-3 pr-4 font-medium">{t("tableName")}</th>
+                  <th className="py-3 pr-4 font-medium">{t("tableFacultyMajor")}</th>
+                  <th className="py-3 pr-4 font-medium">{t("tableYear")}</th>
+                  <th className="py-3 pr-4"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {data?.items.map((s) => {
+                  const fullName = [s.firstName, s.lastName].filter(Boolean).join(" ") || s.email;
+                  const initial = fullName.trim().charAt(0).toUpperCase() || "?";
+                  return (
+                    <tr key={s.id} className="border-b border-foreground/5 transition-colors last:border-0 hover:bg-foreground/[0.02]">
+                      <td className="py-2.5 pl-4 pr-4 font-mono text-xs text-foreground/50">{s.studentId ?? "-"}</td>
+                      <td className="py-2.5 pr-4">
+                        <div className="flex items-center gap-2.5">
+                          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-purple-400 to-brand-emerald-400 text-xs font-bold text-brand-purple-950">
+                            {initial}
+                          </span>
+                          <span className="font-medium text-foreground">{fullName}</span>
+                        </div>
+                      </td>
+                      <td className="py-2.5 pr-4 text-foreground/60">
+                        {name(s.faculty)} / {name(s.major)}
+                      </td>
+                      <td className="py-2.5 pr-4 text-foreground/60">{s.currentYear ?? "-"}</td>
+                      <td className="py-2.5 pr-4 text-right">
+                        <Link
+                          href={`/admin/students/${s.id}`}
+                          className="inline-flex items-center gap-1 text-xs font-medium text-brand-purple-600 hover:underline"
+                        >
+                          {t("viewLink")}
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
+
+      {data && <Pagination page={page} totalPages={data.totalPages} total={data.total} onChange={setPage} />}
     </div>
+  );
+}
+
+function SearchIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" aria-hidden>
+      <circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M11 11L14 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ImportIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden>
+      <path d="M8 2.5V10.5M8 10.5L5 7.5M8 10.5L11 7.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M2.5 12.5V13.5a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1V12.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
   );
 }

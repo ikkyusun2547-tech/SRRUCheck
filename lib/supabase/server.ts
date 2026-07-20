@@ -21,4 +21,5 @@ export function createSupabaseServiceClient() {
 export const STORAGE_BUCKETS = {
   selfies: process.env.SUPABASE_STORAGE_BUCKET_SELFIES ?? "attendance-selfies",
   evidence: process.env.SUPABASE_STORAGE_BUCKET_EVIDENCE ?? "evidence-files",
+  activityCovers: process.env.SUPABASE_STORAGE_BUCKET_ACTIVITY_COVERS ?? "activity-covers",
 } as const;

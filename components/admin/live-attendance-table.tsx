@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ATTENDANCE_STATUS_LABELS, FLAG_REASON_LABELS } from "@/lib/labels";
+import { useLocale, useTranslations } from "next-intl";
 
 type AttendanceRow = {
   id: string;
@@ -10,16 +10,52 @@ type AttendanceRow = {
   distanceMeters: number | null;
   checkinTime: string;
   checkinMethod: string;
-  user: { firstName: string | null; lastName: string | null; email: string; studentId: string | null };
+  user: {
+    firstName: string | null;
+    lastName: string | null;
+    email: string;
+    studentId: string | null;
+    faculty: { nameTh: string; nameEn: string } | null;
+    major: { nameTh: string; nameEn: string } | null;
+  };
 };
 
 const POLL_INTERVAL_MS = 5000;
 
+const STATUS_DOT: Record<AttendanceRow["status"], string> = {
+  auto_approved: "bg-brand-emerald-500",
+  flagged: "bg-amber-500",
+  rejected: "bg-red-500",
+};
+
+const STATUS_TEXT: Record<AttendanceRow["status"], string> = {
+  auto_approved: "text-brand-emerald-700 dark:text-brand-emerald-400",
+  flagged: "text-amber-700 dark:text-amber-400",
+  rejected: "text-red-700 dark:text-red-400",
+};
+
+const FLAG_REASON_KEYS = [
+  "GPS_OUT_OF_BOUNDS",
+  "DEVICE_SHARING_SUSPECTED",
+  "PRINTED_QR_USED",
+  "SELF_REPORTED",
+] as const;
+
+function isFlagReasonKey(k: string): k is (typeof FLAG_REASON_KEYS)[number] {
+  return (FLAG_REASON_KEYS as readonly string[]).includes(k);
+}
+
 export function LiveAttendanceTable({ activityId }: { activityId: string }) {
+  const t = useTranslations("adminLive");
+  const tStatus = useTranslations("attendanceStatus");
+  const tFlagReasons = useTranslations("flagReasons");
+  const locale = useLocale();
+  const orgName = (o: { nameTh: string; nameEn: string } | null) => (o ? (locale === "en" ? o.nameEn : o.nameTh) : "-");
+
   const [rows, setRows] = useState<AttendanceRow[] | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<{ text: string; tone: "success" | "error" } | null>(null);
 
   const load = useCallback(() => {
     fetch(`/api/admin/live/${activityId}/attendances`)
@@ -51,7 +87,11 @@ export function LiveAttendanceTable({ activityId }: { activityId: string }) {
     try {
       const res = await fetch(`/api/admin/live/${activityId}/bulk-approve`, { method: "POST" });
       const data = await res.json();
-      setMessage(res.ok ? `แจ้งเตือนแล้ว ${data.notified}/${data.total} คน` : (data.error ?? "ทำรายการไม่สำเร็จ"));
+      setMessage(
+        res.ok
+          ? { text: t("notifiedMessage", { notified: data.notified, total: data.total }), tone: "success" }
+          : { text: data.error ?? t("actionFailed"), tone: "error" }
+      );
     } finally {
       setBusy(false);
     }
@@ -69,11 +109,11 @@ export function LiveAttendanceTable({ activityId }: { activityId: string }) {
       });
       const data = await res.json();
       if (res.ok) {
-        setMessage(`บังคับอนุมัติแล้ว ${data.approved} รายการ`);
+        setMessage({ text: t("forceApprovedMessage", { count: data.approved }), tone: "success" });
         setSelected(new Set());
         load();
       } else {
-        setMessage(data.error ?? "ทำรายการไม่สำเร็จ");
+        setMessage({ text: data.error ?? t("actionFailed"), tone: "error" });
       }
     } finally {
       setBusy(false);
@@ -81,85 +121,118 @@ export function LiveAttendanceTable({ activityId }: { activityId: string }) {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
           onClick={handleBulkApprove}
           disabled={busy}
-          className="rounded-full bg-brand-emerald-500 px-4 py-1.5 text-sm font-medium text-white disabled:opacity-60"
+          className="rounded-full bg-brand-emerald-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-brand-emerald-600 disabled:opacity-60"
         >
-          แจ้งเตือนผู้ที่อนุมัติอัตโนมัติทั้งหมด
+          {t("notifyAllButton")}
         </button>
         <button
           type="button"
           onClick={handleForceApprove}
           disabled={busy || selected.size === 0}
-          className="rounded-full border border-foreground/20 px-4 py-1.5 text-sm disabled:opacity-40"
+          className="rounded-full border border-foreground/15 px-4 py-2 text-sm font-medium text-foreground/70 transition-colors hover:border-brand-purple-600/30 hover:text-brand-purple-600 disabled:opacity-40"
         >
-          บังคับอนุมัติที่เลือก ({selected.size})
+          {t("forceApproveButton", { count: selected.size })}
         </button>
         <a
           href={`/api/admin/live/${activityId}/export`}
-          className="rounded-full border border-foreground/20 px-4 py-1.5 text-sm"
+          className="inline-flex items-center gap-1.5 rounded-full border border-foreground/15 px-4 py-2 text-sm font-medium text-foreground/70 transition-colors hover:border-brand-purple-600/30 hover:text-brand-purple-600"
         >
-          Export Excel
+          <ExportIcon />
+          {t("exportButton")}
         </a>
-        {message && <span className="text-sm text-foreground/60">{message}</span>}
+        {message && (
+          <span
+            className={`text-sm font-medium ${message.tone === "success" ? "text-brand-emerald-600 dark:text-brand-emerald-400" : "text-red-600 dark:text-red-400"}`}
+          >
+            {message.text}
+          </span>
+        )}
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[700px] text-left text-sm">
-          <thead className="border-b border-foreground/10 text-foreground/60">
+        <table className="w-full min-w-[920px] text-left text-sm">
+          <thead className="border-b border-foreground/10 text-xs uppercase tracking-wide text-foreground/45">
             <tr>
               <th className="py-2 pr-4"></th>
-              <th className="py-2 pr-4">นักศึกษา</th>
-              <th className="py-2 pr-4">เวลา</th>
-              <th className="py-2 pr-4">สถานะ</th>
-              <th className="py-2 pr-4">ระยะห่าง</th>
-              <th className="py-2 pr-4">หมายเหตุ</th>
+              <th className="py-2 pr-4 font-medium">{t("tableStudentId")}</th>
+              <th className="py-2 pr-4 font-medium">{t("tableStudent")}</th>
+              <th className="py-2 pr-4 font-medium">{t("tableFaculty")}</th>
+              <th className="py-2 pr-4 font-medium">{t("tableMajor")}</th>
+              <th className="py-2 pr-4 font-medium">{t("tableTime")}</th>
+              <th className="py-2 pr-4 font-medium">{t("tableStatus")}</th>
+              <th className="py-2 pr-4 font-medium">{t("tableDistance")}</th>
+              <th className="py-2 pr-4 font-medium">{t("tableNote")}</th>
             </tr>
           </thead>
           <tbody>
-            {rows?.map((r) => (
-              <tr key={r.id} className="border-b border-foreground/5">
-                <td className="py-2 pr-4">
-                  {r.status === "flagged" && (
-                    <input
-                      type="checkbox"
-                      checked={selected.has(r.id)}
-                      onChange={() => toggle(r.id)}
-                    />
-                  )}
-                </td>
-                <td className="py-2 pr-4">
-                  {[r.user.firstName, r.user.lastName].filter(Boolean).join(" ") || r.user.email}
-                  <span className="ml-1 text-xs text-foreground/50">({r.user.studentId ?? "-"})</span>
-                </td>
-                <td className="py-2 pr-4">{new Date(r.checkinTime).toLocaleTimeString("th-TH")}</td>
-                <td className="py-2 pr-4">{ATTENDANCE_STATUS_LABELS[r.status]}</td>
-                <td className="py-2 pr-4">
-                  {r.distanceMeters != null ? `${Math.round(r.distanceMeters)} ม.` : "-"}
-                </td>
-                <td className="py-2 pr-4 text-xs text-amber-600">
-                  {r.flagReason
-                    ?.split(",")
-                    .map((f) => FLAG_REASON_LABELS[f] ?? f)
-                    .join(", ")}
-                </td>
-              </tr>
-            ))}
+            {rows?.map((r) => {
+              const displayName = [r.user.firstName, r.user.lastName].filter(Boolean).join(" ") || r.user.email;
+              const initial = displayName.trim().charAt(0).toUpperCase() || "?";
+              return (
+                <tr key={r.id} className="border-b border-foreground/5 transition-colors hover:bg-foreground/[0.02]">
+                  <td className="py-2.5 pr-4">
+                    {r.status === "flagged" && (
+                      <input
+                        type="checkbox"
+                        checked={selected.has(r.id)}
+                        onChange={() => toggle(r.id)}
+                        className="accent-brand-purple-600"
+                      />
+                    )}
+                  </td>
+                  <td className="py-2.5 pr-4 font-mono text-xs text-foreground/50">{r.user.studentId ?? "-"}</td>
+                  <td className="py-2.5 pr-4">
+                    <div className="flex items-center gap-2.5">
+                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-purple-400 to-brand-emerald-400 text-xs font-bold text-brand-purple-950">
+                        {initial}
+                      </span>
+                      <p className="min-w-0 truncate font-medium text-foreground">{displayName}</p>
+                    </div>
+                  </td>
+                  <td className="py-2.5 pr-4 text-foreground/60">{orgName(r.user.faculty)}</td>
+                  <td className="py-2.5 pr-4 text-foreground/60">{orgName(r.user.major)}</td>
+                  <td className="py-2.5 pr-4 text-foreground/60">
+                    {new Date(r.checkinTime).toLocaleTimeString("th-TH")}
+                  </td>
+                  <td className="py-2.5 pr-4">
+                    <span className={`inline-flex items-center gap-1.5 font-medium ${STATUS_TEXT[r.status]}`}>
+                      <span className={`h-1.5 w-1.5 rounded-full ${STATUS_DOT[r.status]}`} />
+                      {tStatus(r.status)}
+                    </span>
+                  </td>
+                  <td className="py-2.5 pr-4 text-foreground/60">
+                    {r.distanceMeters != null ? t("distanceUnit", { meters: Math.round(r.distanceMeters) }) : "-"}
+                  </td>
+                  <td className="py-2.5 pr-4 text-xs text-amber-600 dark:text-amber-400">
+                    {r.flagReason
+                      ?.split(",")
+                      .map((f) => (isFlagReasonKey(f) ? tFlagReasons(f) : f))
+                      .join(", ")}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
-        {rows?.length === 0 && <p className="py-4 text-sm text-foreground/50">ยังไม่มีผู้เช็คชื่อ</p>}
+        {rows?.length === 0 && <p className="py-6 text-center text-sm text-foreground/50">{t("noAttendees")}</p>}
       </div>
 
-      {flaggedRows.length > 0 && (
-        <p className="text-xs text-foreground/50">
-          เคล็ดลับ: ติ๊กเลือกรายการที่ถูก flag แล้วกด &quot;บังคับอนุมัติที่เลือก&quot;
-          สำหรับกรณี เช่น GPS คลาดเคลื่อนทั้งอาคาร
-        </p>
-      )}
+      {flaggedRows.length > 0 && <p className="text-xs text-foreground/45">{t("bulkApproveTip")}</p>}
     </div>
+  );
+}
+
+function ExportIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden>
+      <path d="M8 10.5V2.5M8 10.5L5 7.5M8 10.5L11 7.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M2.5 10.5V12.5a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1V10.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
   );
 }

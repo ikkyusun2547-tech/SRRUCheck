@@ -4,9 +4,15 @@ import { requireAdminSession } from "@/lib/auth/require-admin";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit/log";
 import { activitySchema } from "@/lib/admin/activities";
+import { nextActivityCodeCandidate } from "@/lib/admin/activity-code";
+import { parseCoverImageDataUrl } from "@/lib/admin/activity-cover";
 import { parseThaiLocalDateTime } from "@/lib/admin/datetime";
 import { notifyMany } from "@/lib/notifications/dispatch";
 import { getEligibleStudentIds } from "@/lib/notifications/eligibility";
+import { STORAGE_BUCKETS } from "@/lib/supabase/server";
+import { removeFromBucket, uploadToBucket } from "@/lib/supabase/storage";
+
+const MAX_CODE_ATTEMPTS = 5;
 
 // GET routes with no dynamic path segment default toward static
 // optimization in Next.js — force dynamic so session/auth-scoped data is
@@ -39,34 +45,72 @@ export async function POST(request: Request) {
       { status: 400 }
     );
   }
-  const { restrictions, description, locationName, ...data } = parsed.data;
+  // activityCode is server-generated (see lib/admin/activity-code.ts) and
+  // removeCoverImage is meaningless for a brand-new activity — both
+  // excluded from `data` so they can't leak into the Prisma create() call
+  // below as stray/incorrect fields.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { restrictions, description, locationName, coverImageDataUrl, removeCoverImage, activityCode: _ignored, ...data } =
+    parsed.data;
+
+  let coverImagePath: string | null = null;
+  if (coverImageDataUrl) {
+    const cover = parseCoverImageDataUrl(coverImageDataUrl);
+    if (!cover) {
+      return NextResponse.json({ error: "ไฟล์รูปปกไม่ถูกต้อง กรุณาแนบรูปภาพใหม่" }, { status: 400 });
+    }
+    // Named independently of activityCode (generated further below, possibly
+    // after a retry) so the upload doesn't need to wait on that.
+    coverImagePath = `${crypto.randomUUID()}.${cover.extension}`;
+    await uploadToBucket(STORAGE_BUCKETS.activityCovers, coverImagePath, cover.buffer, cover.contentType);
+  }
 
   try {
-    const activity = await prisma.$transaction(async (tx) => {
-      const created = await tx.activity.create({
-        data: {
-          ...data,
-          description: description || null,
-          locationName: locationName || null,
-          locationLat: data.locationLat ?? null,
-          locationLng: data.locationLng ?? null,
-          allowedRadius: data.allowedRadius ?? null,
-          startTime: parseThaiLocalDateTime(data.startTime),
-          endTime: parseThaiLocalDateTime(data.endTime),
-        },
-      });
-      if (restrictions.length > 0) {
-        await tx.activityRestriction.createMany({
-          data: restrictions.map((r) => ({
-            activityId: created.id,
-            facultyId: r.facultyId || null,
-            majorId: r.majorId || null,
-            yearLevel: r.yearLevel ?? null,
-          })),
+    let activity: Awaited<ReturnType<typeof prisma.activity.create>> | undefined;
+    for (let attempt = 1; attempt <= MAX_CODE_ATTEMPTS; attempt++) {
+      const activityCode = await nextActivityCodeCandidate(
+        data.activityCategory,
+        data.academicYear,
+        data.level,
+        attempt
+      );
+      try {
+        activity = await prisma.$transaction(async (tx) => {
+          const created = await tx.activity.create({
+            data: {
+              ...data,
+              description: description || null,
+              locationName: locationName || null,
+              locationLat: data.locationLat ?? null,
+              locationLng: data.locationLng ?? null,
+              allowedRadius: data.allowedRadius ?? null,
+              coverImagePath,
+              activityCode,
+              startTime: parseThaiLocalDateTime(data.startTime),
+              endTime: parseThaiLocalDateTime(data.endTime),
+            },
+          });
+          if (restrictions.length > 0) {
+            await tx.activityRestriction.createMany({
+              data: restrictions.map((r) => ({
+                activityId: created.id,
+                facultyId: r.facultyId || null,
+                majorId: r.majorId || null,
+                yearLevel: r.yearLevel ?? null,
+              })),
+            });
+          }
+          return created;
         });
+        break;
+      } catch (err) {
+        const isCodeCollision = err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002";
+        if (!isCodeCollision || attempt === MAX_CODE_ATTEMPTS) throw err;
+        // Another activity was created concurrently and claimed this exact
+        // sequence number — retry with the next one.
       }
-      return created;
-    });
+    }
+    if (!activity) throw new Error("ไม่สามารถสร้างรหัสกิจกรรมได้");
 
     await logAudit({
       actorId: session.user.id,
@@ -91,8 +135,11 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ activity }, { status: 201 });
   } catch (err) {
+    if (coverImagePath) {
+      await removeFromBucket(STORAGE_BUCKETS.activityCovers, coverImagePath).catch(() => {});
+    }
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
-      return NextResponse.json({ error: "รหัสกิจกรรมนี้ถูกใช้แล้ว กรุณาใช้รหัสอื่น" }, { status: 409 });
+      return NextResponse.json({ error: "สร้างรหัสกิจกรรมไม่สำเร็จ กรุณาลองใหม่อีกครั้ง" }, { status: 409 });
     }
     throw err;
   }

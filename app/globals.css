@@ -1,28 +1,59 @@
 @import "tailwindcss";
 @import "leaflet/dist/leaflet.css";
 
+/* Tailwind's dark: variant defaults to prefers-color-scheme — but this
+   app's actual dark mode toggle (components/theme-toggle.tsx) stamps
+   data-theme="dark" on <html> instead, independent of OS preference (see
+   THEME_INIT_SCRIPT in app/layout.tsx). Without this, every dark: utility
+   class only ever responds to the OS setting and silently ignores the
+   in-app toggle. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  /* Card/panel surface — distinct from the page background so elevated
+     content (tables, forms, stat cards) reads as a layer, not a flat
+     continuation of the page. */
+  --surface: #ffffff;
+  --surface-raised: #f8f7fc;
 
-  /* Brand palette — dark purple / emerald. Dark/light toggle logic lands
-     in the cross-cutting phase; this just fixes the tokens both modes
-     will share so later work doesn't have to renegotiate the palette. */
-  --brand-purple-950: #2e1065;
-  --brand-purple-800: #5b21b6;
+  /* Brand palette — purple / emerald, full scale so gradients, tints, and
+     accents all pull from the same source instead of ad-hoc hex values
+     creeping into individual pages. Dark/light toggle logic lands in the
+     cross-cutting phase; this just fixes the tokens both modes share so
+     later work doesn't have to renegotiate the palette. */
+  --brand-purple-50: #f5f3ff;
+  --brand-purple-100: #ede9fe;
+  --brand-purple-200: #ddd6fe;
+  --brand-purple-400: #a78bfa;
   --brand-purple-600: #7c3aed;
-  --brand-emerald-600: #059669;
+  --brand-purple-800: #5b21b6;
+  --brand-purple-950: #2e1065;
+  --brand-emerald-50: #ecfdf5;
+  --brand-emerald-100: #d1fae5;
+  --brand-emerald-400: #34d399;
   --brand-emerald-500: #10b981;
+  --brand-emerald-600: #059669;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-brand-purple-950: var(--brand-purple-950);
-  --color-brand-purple-800: var(--brand-purple-800);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-brand-purple-50: var(--brand-purple-50);
+  --color-brand-purple-100: var(--brand-purple-100);
+  --color-brand-purple-200: var(--brand-purple-200);
+  --color-brand-purple-400: var(--brand-purple-400);
   --color-brand-purple-600: var(--brand-purple-600);
-  --color-brand-emerald-600: var(--brand-emerald-600);
+  --color-brand-purple-800: var(--brand-purple-800);
+  --color-brand-purple-950: var(--brand-purple-950);
+  --color-brand-emerald-50: var(--brand-emerald-50);
+  --color-brand-emerald-100: var(--brand-emerald-100);
+  --color-brand-emerald-400: var(--brand-emerald-400);
   --color-brand-emerald-500: var(--brand-emerald-500);
+  --color-brand-emerald-600: var(--brand-emerald-600);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -34,21 +65,27 @@
   :root:not([data-theme="light"]) {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --surface: #16141d;
+    --surface-raised: #1d1b27;
   }
 }
 
 :root[data-theme="dark"] {
   --background: #0a0a0a;
   --foreground: #ededed;
+  --surface: #16141d;
+  --surface-raised: #1d1b27;
 }
 
 :root[data-theme="light"] {
   --background: #ffffff;
   --foreground: #171717;
+  --surface: #ffffff;
+  --surface-raised: #f8f7fc;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), system-ui, sans-serif;
 }

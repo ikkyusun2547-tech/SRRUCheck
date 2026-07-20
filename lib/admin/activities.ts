@@ -32,9 +32,16 @@ export const activitySchema = z
     creditHours: z.coerce.number().positive("ชั่วโมงต้องมากกว่า 0").max(1000),
     checkinMethod: z.enum(["realtime", "self_report"], { error: "กรุณาเลือกวิธีเช็คชื่อ" }),
     requiresGps: z.boolean(),
-    activityCode: z.string().trim().min(1, "กรุณากรอกรหัสกิจกรรม").max(50),
+    /** Server-generated on create (see lib/admin/activity-code.ts) — present
+     * here only so an edit submission can round-trip the existing code. */
+    activityCode: z.string().trim().max(50).optional(),
     status: z.enum(["open", "closed", "cancelled"]).default("open"),
     restrictions: z.array(activityRestrictionSchema).optional().default([]),
+    /** A newly-selected cover image, base64-encoded — omitted when the existing
+     * (or absent) cover image isn't being changed. */
+    coverImageDataUrl: z.string().optional(),
+    /** Explicitly clears the cover image without uploading a replacement. */
+    removeCoverImage: z.boolean().optional(),
   })
   .refine((d) => new Date(d.endTime) > new Date(d.startTime), {
     message: "เวลาสิ้นสุดต้องอยู่หลังเวลาเริ่ม",

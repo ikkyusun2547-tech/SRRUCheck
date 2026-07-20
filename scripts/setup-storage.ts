@@ -34,6 +34,7 @@ async function main() {
   console.log("Setting up Supabase Storage buckets...");
   await ensureBucket(STORAGE_BUCKETS.selfies);
   await ensureBucket(STORAGE_BUCKETS.evidence);
+  await ensureBucket(STORAGE_BUCKETS.activityCovers);
   console.log("Done.");
 }
 
