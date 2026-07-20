@@ -24,7 +24,19 @@
     },
     "plugins": [
       "expo-router",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "SRRU Check ใช้กล้องเพื่อสแกน QR เช็คชื่อและถ่ายเซลฟียืนยันตัวตน"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "SRRU Check ใช้ตำแหน่งที่ตั้งเพื่อยืนยันว่าคุณอยู่ในพื้นที่จัดกิจกรรม"
+        }
+      ]
     ]
   }
 }

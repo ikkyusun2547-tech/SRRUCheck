@@ -3,6 +3,7 @@ import {
   generateQrToken,
   verifyQrToken,
   extractActivityIdFromToken,
+  buildCheckinUrl,
   QR_ROTATE_INTERVAL_MS,
 } from "./qr-token";
 
@@ -116,5 +117,21 @@ describe("extractActivityIdFromToken (client-side, unverified)", () => {
     expect(extractActivityIdFromToken("garbage")).toBeNull();
     expect(extractActivityIdFromToken("")).toBeNull();
     expect(extractActivityIdFromToken("unknown.act_1.0.sig")).toBeNull();
+  });
+
+  it("reads the id out of a full checkin URL — what the projector's live QR image actually encodes", () => {
+    const token = generateQrToken(ACTIVITY_ID, "live", SECRET);
+    const url = buildCheckinUrl("https://srru.ac.th", token);
+    expect(extractActivityIdFromToken(url)).toBe(ACTIVITY_ID);
+  });
+
+  it("reads the id out of a checkin URL on a domain that itself contains dots", () => {
+    const token = generateQrToken(ACTIVITY_ID, "printed", SECRET);
+    const url = buildCheckinUrl("http://localhost:3000", token);
+    expect(extractActivityIdFromToken(url)).toBe(ACTIVITY_ID);
+  });
+
+  it("returns null for a URL with no token query param", () => {
+    expect(extractActivityIdFromToken("https://srru.ac.th/checkin")).toBeNull();
   });
 });

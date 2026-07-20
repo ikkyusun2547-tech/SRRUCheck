@@ -92,8 +92,22 @@ export function buildCheckinUrl(appBaseUrl: string, token: string): string {
  * verifying its signature. Safe to call client-side — it's only used to
  * know which activity's info to fetch for UI purposes; the token is always
  * re-verified server-side before anything security-relevant happens.
+ *
+ * Accepts either a bare token (e.g. from useSearchParams().get("token") when
+ * a printed/deep-linked QR is opened directly in the browser) or a full
+ * checkin URL as built by buildCheckinUrl() — that's what the projector's
+ * live QR image actually encodes, so an in-page camera scanner decoding
+ * that image gets the whole URL back, not just the token.
  */
-export function extractActivityIdFromToken(token: string): string | null {
+export function extractActivityIdFromToken(scanned: string): string | null {
+  let token = scanned;
+  try {
+    const fromQuery = new URL(scanned).searchParams.get("token");
+    if (fromQuery) token = fromQuery;
+  } catch {
+    // Not a URL — already a bare token.
+  }
+
   const parts = token.split(".");
   if (parts.length !== 4) return null;
   const [type, activityId] = parts;

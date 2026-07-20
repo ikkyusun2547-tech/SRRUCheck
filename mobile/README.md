@@ -3,15 +3,23 @@
 Student-only feature set, calling the same Next.js API routes under `app/api/` as the web
 client — no business logic is duplicated here.
 
-## สถานะ: เฟส 6 (บางส่วน) — auth + dashboard
+## สถานะ: เฟส 6 (บางส่วน) — auth + dashboard + เช็คชื่อ
 
-**ทำแล้ว:** เข้าสู่ระบบ (dev-login shortcut, เหมือนฝั่งเว็บ), แดชบอร์ด Activity Passport (ชั่วโมง/
-กิจกรรมสะสม แยกตามหมวด) ดึงข้อมูลจริงจาก API เดียวกับเว็บ — ยืนยันด้วย E2E ผ่าน Expo web build จริง
-(11/11 scenario ผ่าน)
+**ทำแล้ว:**
+- เข้าสู่ระบบ (dev-login shortcut, เหมือนฝั่งเว็บ)
+- แดชบอร์ด Activity Passport (ชั่วโมง/กิจกรรมสะสม แยกตามหมวด) ดึงข้อมูลจริงจาก API เดียวกับเว็บ
+- เช็คชื่อ: สแกน QR (กล้องหลัง, `expo-camera`'s barcode scanner) หรือแนบหลักฐานด้วยตนเองสำหรับ
+  กิจกรรม self-report, ยืนยันตำแหน่ง GPS เมื่อกิจกรรมต้องการ (`expo-location`), ถ่ายเซลฟียืนยันตัวตน
+  ด้วยกล้องหน้า (ไม่มีทางเลือกอัปโหลดจากคลังภาพ เหมือนฝั่งเว็บ) แล้วส่งไป `/api/checkin` เส้นทางเดียวกับ
+  เว็บทุกประการ
 
-**ยังไม่ทำ:** เช็คชื่อ (กล้อง/GPS/QR), คำร้อง 3 ประเภท, ประวัติกิจกรรม, การแจ้งเตือน, โปรไฟล์, และ
-Google Sign-In จริง (ตอนนี้เป็นปุ่ม placeholder — ต้องตั้งค่า Google OAuth client สำหรับมือถือก่อน ดู
-หัวข้อด้านล่าง)
+ยืนยันด้วย E2E ผ่าน Expo web build จริง (คลิกจริง ไม่ใช่แค่เปิดหน้า): ล็อกอิน+แดชบอร์ด 11/11, flow
+เช็คชื่อแบบ self-report ครบวงจร (เลือกกิจกรรม → ถ่ายเซลฟีจริงผ่าน fake camera stream → ส่งจริงไป API →
+ได้ผลลัพธ์ "รอตรวจสอบ" ถูกต้อง) 8/8, และยืนยันว่าหน้าจอสแกน QR mount ได้โดยไม่มี error (ทดสอบการสแกน
+QR จริงผ่าน Playwright ไม่ได้เพราะ Chromium fake camera ไม่สามารถแสดง QR code จริงได้)
+
+**ยังไม่ทำ:** คำร้อง 3 ประเภท, ประวัติกิจกรรม, การแจ้งเตือน, โปรไฟล์, และ Google Sign-In จริง (ตอนนี้
+เป็นปุ่ม placeholder — ต้องตั้งค่า Google OAuth client สำหรับมือถือก่อน ดูหัวข้อด้านล่าง)
 
 ## สถาปัตยกรรม auth สำหรับมือถือ
 
@@ -36,6 +44,26 @@ Bearer token flow แยกต่างหาก โดยไม่ซ้ำ bus
 - `/api/passport/mine` (ใหม่) — เว็บอ่าน Activity Passport ผ่านการเรียกฟังก์ชัน server-side ตรงๆ
   (`getPassportSummary()` ใน React Server Component) ไม่มี REST endpoint เดิม เพิ่ม route นี้เพื่อให้
   มือถือเรียกได้ โดยยังใช้ฟังก์ชันคำนวณตัวเดียวกัน
+
+## เช็คชื่อบนมือถือ
+
+`app/checkin.tsx` เป็น state machine เดียวมิเรอร์ `app/(student)/checkin/checkin-flow.tsx` ของเว็บทุก
+ขั้นตอน (เลือกกิจกรรม → สแกน QR/แนบหลักฐาน → GPS ถ้าต้องการ → เซลฟี → ส่ง → ผลลัพธ์) ตรรกะที่ปลอดภัย
+ให้ใช้ฝั่ง client ถูก duplicate มาเป็นไฟล์แยกใน `mobile/lib/` เพราะ HMAC signing/verification (ต้องใช้
+Node's `crypto`) รันได้แค่ฝั่ง server เท่านั้น — ไม่มีทางแชร์โค้ดข้าม runtime ได้จริง:
+
+- `mobile/lib/qr-token.ts`'s `extractActivityIdFromToken` — pure string parsing ไม่มี crypto มิเรอร์
+  `lib/checkin/qr-token.ts` ของเว็บ (verify ตัวจริงเกิดที่ server เสมอ ฟังก์ชันนี้ใช้แค่บอก UI ว่าจะโหลด
+  ข้อมูลกิจกรรมไหนต่อ)
+- `mobile/lib/device-id.ts` — UUID ต่ออุปกรณ์ที่ persist ผ่าน `lib/storage.ts` (เทียบเท่า
+  `lib/checkin/device-id.ts`'s localStorage บนเว็บ)
+
+**บั๊กที่เจอและแก้ระหว่างทาง (กระทบทั้งเว็บและมือถือ):** QR ที่จอโปรเจกเตอร์เข้ารหัสเป็น URL เต็ม
+(`buildCheckinUrl()`) ไม่ใช่ bare token เปล่าๆ แต่ `extractActivityIdFromToken` เดิมของเว็บรองรับแค่
+bare token — แปลว่าการสแกน QR ผ่านกล้องในแอป (ตรงข้ามกับการเปิดลิงก์ตรงๆ ที่ query string ถูก parse
+ให้แล้ว) จะขึ้น error "QR นี้ไม่ใช่ QR ของระบบ SRRU Check" ทุกครั้งทั้งที่ QR ถูกต้อง แก้แล้วทั้งสอง
+ฝั่งให้รองรับทั้ง bare token และ URL เต็ม (ดึง `?token=` ออกมาก่อนถ้าเป็น URL) มี unit test ครอบคลุมใน
+`lib/checkin/qr-token.test.ts`
 
 ## เริ่มต้นใช้งาน
 

@@ -104,6 +104,10 @@ export default function Dashboard() {
         </Pressable>
       </View>
 
+      <Pressable style={styles.checkinButton} onPress={() => router.push("/checkin")}>
+        <Text style={styles.checkinButtonText}>เช็คชื่อกิจกรรม</Text>
+      </Pressable>
+
       {user && (
         <Text style={styles.welcome}>
           {[user.firstName, user.lastName].filter(Boolean).join(" ") || user.email}
@@ -156,6 +160,13 @@ const styles = StyleSheet.create({
   title: { fontSize: 22, fontWeight: "700" },
   logout: { color: "#b91c1c", fontSize: 13 },
   welcome: { fontSize: 14, color: "#374151" },
+  checkinButton: {
+    backgroundColor: "#7c3aed",
+    borderRadius: 999,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  checkinButtonText: { color: "#fff", fontWeight: "600" },
   badge: { alignSelf: "flex-start", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 4 },
   badgePass: { backgroundColor: "#d1fae5" },
   badgePending: { backgroundColor: "#fef3c7" },

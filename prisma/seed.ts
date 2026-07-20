@@ -114,7 +114,12 @@ async function seedActivities() {
 
   await prisma.activity.upsert({
     where: { activityCode: "ACT-DEMO-001" },
-    update: {},
+    // Re-running the seed (e.g. days later, in a fresh dev session) should
+    // put this demo activity back into its intended "currently open,
+    // usable for a live check-in test" state rather than leaving it
+    // however a previous session's clock left it — status/time fields are
+    // the only ones worth refreshing; everything else is stable metadata.
+    update: { status: "open", startTime: new Date(now - HOUR), endTime: new Date(now + 2 * HOUR) },
     create: {
       title: "ปฐมนิเทศนักศึกษาใหม่ (ตัวอย่าง)",
       description: "กิจกรรมตัวอย่างสำหรับทดสอบเช็คชื่อแบบสามประสาน (QR + GPS + เซลฟี)",
@@ -139,7 +144,7 @@ async function seedActivities() {
 
   await prisma.activity.upsert({
     where: { activityCode: "ACT-DEMO-002" },
-    update: {},
+    update: { status: "open", startTime: new Date(now - HOUR), endTime: new Date(now + 3 * HOUR) },
     create: {
       title: "จิตอาสาพัฒนาชุมชน (ตัวอย่าง — แนบหลักฐานเอง)",
       description: "กิจกรรมตัวอย่างสำหรับทดสอบ self-report check-in",
@@ -160,7 +165,13 @@ async function seedActivities() {
 
   await prisma.activity.upsert({
     where: { activityCode: "ACT-DEMO-003" },
-    update: {},
+    // Always kept in the past — this one exists specifically to test that
+    // checking in against an already-ended activity is rejected.
+    update: {
+      status: "closed",
+      startTime: new Date(now - 7 * 24 * HOUR),
+      endTime: new Date(now - 7 * 24 * HOUR + 2 * HOUR),
+    },
     create: {
       title: "กิจกรรมที่ปิดรับเช็คชื่อแล้ว (ตัวอย่าง)",
       description: "ใช้ทดสอบว่าเช็คชื่อกิจกรรมที่ปิดแล้วถูกปฏิเสธอย่างถูกต้อง",
