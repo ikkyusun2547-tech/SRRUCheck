@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Pressable,
   StyleSheet,
@@ -11,6 +10,7 @@ import {
 import { router } from "expo-router";
 import { apiFetch, ApiError } from "@/lib/api";
 import { storeSession, type AuthUser } from "@/lib/auth";
+import { notify } from "@/lib/notify";
 
 type DevUser = {
   id: string;
@@ -43,9 +43,11 @@ export default function Login() {
         { method: "POST", body: { userId: user.id } }
       );
       await storeSession(res.token, res.user);
-      router.replace("/dashboard");
+      // Mirrors the web middleware's gate: a student whose profile isn't
+      // complete yet gets sent to fill it in before anything else.
+      router.replace(res.user.role === "student" && !res.user.profileCompleted ? "/profile" : "/dashboard");
     } catch (err) {
-      Alert.alert("เข้าสู่ระบบไม่สำเร็จ", err instanceof ApiError ? err.message : "เกิดข้อผิดพลาด");
+      notify("เข้าสู่ระบบไม่สำเร็จ", err instanceof ApiError ? err.message : "เกิดข้อผิดพลาด");
     } finally {
       setLoggingInId(null);
     }
@@ -59,10 +61,7 @@ export default function Login() {
       <Pressable
         style={styles.googleButton}
         onPress={() =>
-          Alert.alert(
-            "ยังไม่พร้อมใช้งาน",
-            "ต้องตั้งค่า Google OAuth client สำหรับมือถือก่อน (ดู mobile/README.md)"
-          )
+          notify("ยังไม่พร้อมใช้งาน", "ต้องตั้งค่า Google OAuth client สำหรับมือถือก่อน (ดู mobile/README.md)")
         }
       >
         <Text style={styles.googleButtonText}>เข้าสู่ระบบด้วย Google</Text>

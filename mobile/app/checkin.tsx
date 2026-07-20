@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Image,
   Pressable,
@@ -15,6 +14,7 @@ import { router } from "expo-router";
 import { apiFetch, ApiError } from "@/lib/api";
 import { getOrCreateDeviceId } from "@/lib/device-id";
 import { extractActivityIdFromToken } from "@/lib/qr-token";
+import { notify } from "@/lib/notify";
 
 const FLAG_REASON_LABEL_TH: Record<string, string> = {
   GPS_OUT_OF_BOUNDS: "อยู่นอกระยะที่กำหนดของกิจกรรม",
@@ -97,7 +97,7 @@ export default function Checkin() {
     if (!cameraPermission?.granted) {
       const res = await requestCameraPermission();
       if (!res.granted) {
-        Alert.alert("ต้องอนุญาตใช้กล้อง", "กรุณาอนุญาตการใช้กล้องเพื่อสแกน QR เช็คชื่อ");
+        notify("ต้องอนุญาตใช้กล้อง", "กรุณาอนุญาตการใช้กล้องเพื่อสแกน QR เช็คชื่อ");
         return;
       }
     }
@@ -144,13 +144,13 @@ export default function Checkin() {
     if (!cameraPermission?.granted) {
       const res = await requestCameraPermission();
       if (!res.granted) {
-        Alert.alert("ต้องอนุญาตใช้กล้อง", "กรุณาอนุญาตการใช้กล้องเพื่อถ่ายเซลฟียืนยันตัวตน");
+        notify("ต้องอนุญาตใช้กล้อง", "กรุณาอนุญาตการใช้กล้องเพื่อถ่ายเซลฟียืนยันตัวตน");
         return;
       }
     }
     const photo = await cameraRef.current?.takePictureAsync({ base64: true, quality: 0.5 });
     if (!photo?.base64) {
-      Alert.alert("ถ่ายรูปไม่สำเร็จ", "กรุณาลองใหม่อีกครั้ง");
+      notify("ถ่ายรูปไม่สำเร็จ", "กรุณาลองใหม่อีกครั้ง");
       return;
     }
     setSelfieUri(photo.uri);

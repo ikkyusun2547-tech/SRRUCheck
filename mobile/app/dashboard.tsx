@@ -104,9 +104,23 @@ export default function Dashboard() {
         </Pressable>
       </View>
 
-      <Pressable style={styles.checkinButton} onPress={() => router.push("/checkin")}>
-        <Text style={styles.checkinButtonText}>เช็คชื่อกิจกรรม</Text>
-      </Pressable>
+      <View style={styles.navGrid}>
+        <Pressable style={styles.navButton} onPress={() => router.push("/checkin")}>
+          <Text style={styles.navButtonText}>เช็คชื่อ</Text>
+        </Pressable>
+        <Pressable style={styles.navButton} onPress={() => router.push("/requests")}>
+          <Text style={styles.navButtonText}>คำร้อง</Text>
+        </Pressable>
+        <Pressable style={styles.navButton} onPress={() => router.push("/history")}>
+          <Text style={styles.navButtonText}>ประวัติ</Text>
+        </Pressable>
+        <Pressable style={styles.navButton} onPress={() => router.push("/notifications")}>
+          <Text style={styles.navButtonText}>แจ้งเตือน</Text>
+        </Pressable>
+        <Pressable style={styles.navButton} onPress={() => router.push("/profile")}>
+          <Text style={styles.navButtonText}>โปรไฟล์</Text>
+        </Pressable>
+      </View>
 
       {user && (
         <Text style={styles.welcome}>
@@ -160,13 +174,16 @@ const styles = StyleSheet.create({
   title: { fontSize: 22, fontWeight: "700" },
   logout: { color: "#b91c1c", fontSize: 13 },
   welcome: { fontSize: 14, color: "#374151" },
-  checkinButton: {
+  navGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  navButton: {
+    flexGrow: 1,
+    minWidth: "30%",
     backgroundColor: "#7c3aed",
-    borderRadius: 999,
+    borderRadius: 12,
     paddingVertical: 14,
     alignItems: "center",
   },
-  checkinButtonText: { color: "#fff", fontWeight: "600" },
+  navButtonText: { color: "#fff", fontWeight: "600", fontSize: 13 },
   badge: { alignSelf: "flex-start", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 4 },
   badgePass: { backgroundColor: "#d1fae5" },
   badgePending: { backgroundColor: "#fef3c7" },

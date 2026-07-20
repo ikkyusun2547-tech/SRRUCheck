@@ -91,10 +91,25 @@ async function seedDevUsers() {
     },
   });
 
-  // Deliberately incomplete profile — exercises the /setup-profile redirect.
+  // Deliberately incomplete profile — exercises the /setup-profile
+  // redirect (web) and the equivalent mobile gate. Reset on every seed run
+  // (not just `update: {}`) — otherwise the first test session that
+  // completes this profile "uses it up" permanently, since re-seeding
+  // would never restore it back to its intended incomplete state.
   await prisma.user.upsert({
     where: { email: `student2@${domain}` },
-    update: {},
+    update: {
+      title: null,
+      firstName: null,
+      lastName: null,
+      studentId: null,
+      enrollmentYear: null,
+      currentYear: null,
+      programType: null,
+      facultyId: null,
+      majorId: null,
+      profileCompleted: false,
+    },
     create: {
       email: `student2@${domain}`,
       role: "student",
