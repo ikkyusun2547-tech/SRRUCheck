@@ -46,13 +46,18 @@
     "rejected": "Rejected"
   },
   "dashboard": {
+    "eyebrow": "Activity progress summary",
     "title": "Activity Passport",
+    "subtitle": "Track your cumulative hours and progress toward the graduation criteria",
     "passed": "Criteria met",
     "notPassed": "Not yet met",
     "totalHours": "Total hours",
     "totalActivities": "Total activities",
     "yearlyTarget": "Cumulative target by end of this year",
-    "categoryBreakdown": "Hours by category"
+    "categoryBreakdown": "Hours by category",
+    "hoursUnit": "hrs",
+    "activitiesUnit": "activities",
+    "noUser": "User data not found"
   },
   "common": {
     "save": "Save",

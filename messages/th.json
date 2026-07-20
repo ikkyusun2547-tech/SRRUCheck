@@ -46,13 +46,18 @@
     "rejected": "ปฏิเสธ"
   },
   "dashboard": {
+    "eyebrow": "สรุปความก้าวหน้ากิจกรรม",
     "title": "Activity Passport",
+    "subtitle": "ติดตามชั่วโมงสะสมและความคืบหน้าตามเกณฑ์การจบของคุณ",
     "passed": "ผ่านเกณฑ์แล้ว",
     "notPassed": "ยังไม่ผ่านเกณฑ์",
     "totalHours": "ชั่วโมงสะสม",
     "totalActivities": "จำนวนกิจกรรม",
     "yearlyTarget": "เป้าหมายสะสมภายในสิ้นปีนี้",
-    "categoryBreakdown": "ชั่วโมงแยกตามหมวดหมู่"
+    "categoryBreakdown": "ชั่วโมงแยกตามหมวดหมู่",
+    "hoursUnit": "ชม.",
+    "activitiesUnit": "กิจกรรม",
+    "noUser": "ไม่พบข้อมูลผู้ใช้"
   },
   "common": {
     "save": "บันทึก",

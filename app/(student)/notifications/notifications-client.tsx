@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { EmptyState } from "@/components/admin/empty-state";
+import { BellIcon } from "@/components/student/nav-icons";
 
 type NotificationItem = {
   id: string;
@@ -36,27 +38,40 @@ export function NotificationsClient() {
     await fetch(`/api/notifications/${id}/read`, { method: "POST" });
   }
 
-  if (!items) return <p className="text-sm text-foreground/50">กำลังโหลด...</p>;
-  if (items.length === 0) return <p className="text-sm text-foreground/50">ยังไม่มีการแจ้งเตือน</p>;
+  if (!items) return <p className="py-8 text-center text-sm text-foreground/50">กำลังโหลด...</p>;
+  if (items.length === 0) {
+    return <EmptyState icon={<BellIcon className="h-[22px] w-[22px]" />} message="ยังไม่มีการแจ้งเตือน" />;
+  }
 
   return (
-    <ul className="space-y-2">
+    <ul className="space-y-2.5">
       {items.map((n) => (
         <li
           key={n.id}
           onClick={() => !n.readAt && markRead(n.id)}
-          className={`cursor-pointer rounded-md border p-3 text-sm ${
-            n.readAt ? "border-foreground/10" : "border-brand-purple-600/40 bg-brand-purple-600/5"
+          className={`flex items-start gap-3 rounded-xl border p-4 shadow-sm transition-colors ${
+            n.readAt
+              ? "cursor-default border-foreground/10 bg-surface"
+              : "cursor-pointer border-brand-purple-600/25 bg-brand-purple-50/50 hover:border-brand-purple-600/40 dark:bg-brand-purple-400/5"
           }`}
         >
-          <div className="flex items-center justify-between">
-            <p className="font-medium">{n.title}</p>
-            {!n.readAt && <span className="h-2 w-2 shrink-0 rounded-full bg-brand-purple-600" />}
+          <span
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+              n.readAt
+                ? "bg-foreground/8 text-foreground/40"
+                : "bg-brand-purple-100 text-brand-purple-600 dark:bg-brand-purple-400/15 dark:text-brand-purple-400"
+            }`}
+          >
+            <BellIcon />
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-start justify-between gap-2">
+              <p className="min-w-0 truncate font-medium text-foreground">{n.title}</p>
+              {!n.readAt && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-brand-purple-600" aria-hidden />}
+            </div>
+            {n.body && <p className="mt-1 text-sm text-foreground/70">{n.body}</p>}
+            <p className="mt-1.5 text-xs text-foreground/45">{new Date(n.createdAt).toLocaleString("th-TH")}</p>
           </div>
-          {n.body && <p className="mt-1 text-foreground/70">{n.body}</p>}
-          <p className="mt-1 text-xs text-foreground/50">
-            {new Date(n.createdAt).toLocaleString("th-TH")}
-          </p>
         </li>
       ))}
     </ul>
